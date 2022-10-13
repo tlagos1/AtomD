@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="experiments_new_message">new message</string>
+    <string name="experiments_new_file">new file</string>
+    <string name="experiments_delete_experiment">delete experiment</string>
+    
+    <string name="experiments_data_message_title_name">Experiment</string>
+    <string name="experiments_data_message_title_name_custom">Custom Experiment Name</string>
+    <string name="experiments_data_message_size">Size</string>
+    <string name="experiments_data_message_attempts">Repetitions</string>
+    <string name="experiments_data_message_submit">Add</string>
+
+    <string name="experiments_file_title_name">Experiment</string>
+    <string name="experiments_file_title_name_custom">Custom Experiment Name</string>
+    <string name="experiments_file_size">File size</string>
+    <string name="experiments_file_rate">Repetitions</string>
+    <string name="experiments_file_submit">Add</string>
+
+    <string name="experiments_delete_submit">Delete</string>
+    <string name="experiments_file_size_hint">Power of 10</string>
+    <string name="experiments_discover_repetitions">New attempts of discovery</string>
+</resources>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/navigation_experiment"
+    app:startDestination="@id/experimentFragment">
+
+    <fragment
+        android:id="@+id/experimentFragment"
+        android:name="com.sorbonne.atom_d.ui.experiment.ExperimentFragment"
+        android:label="fragment_experiment"
+        tools:layout="@layout/fragment_experiment" >
+        <action
+            android:id="@+id/action_experimentFragment_to_chunksMessageFragment"
+            app:destination="@id/chunksMessageFragment" />
+        <action
+            android:id="@+id/action_experimentFragment_to_deleteExperimentFragment"
+            app:destination="@id/deleteExperimentFragment" />
+        <action
+            android:id="@+id/action_experimentFragment_to_connectionAttemptsFragment"
+            app:destination="@id/connectionAttemptsFragment" />
+        <action
+            android:id="@+id/action_experimentFragment_to_fileParametersFragment"
+            app:destination="@id/fileParametersFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/deleteExperimentFragment"
+        android:name="com.sorbonne.atom_d.ui.experiment.DeleteExperimentFragment"
+        android:label="fragment_delete_experiment"
+        tools:layout="@layout/fragment_delete_experiment" />
+    <fragment
+        android:id="@+id/chunksMessageFragment"
+        android:name="com.sorbonne.atom_d.ui.experiment.ChunksMessageFragment"
+        android:label="ChunksMessageFragment" />
+    <fragment
+        android:id="@+id/fileParametersFragment"
+        android:name="com.sorbonne.atom_d.ui.experiment.FileParametersFragment"
+        android:label="fragment_file_parameters"
+        tools:layout="@layout/fragment_file_parameters" />
+    <fragment
+        android:id="@+id/connectionAttemptsFragment"
+        android:name="com.sorbonne.atom_d.ui.experiment.ConnectionAttemptsFragment"
+        android:label="ConnectionAttemptsFragment" />
+</navigation>

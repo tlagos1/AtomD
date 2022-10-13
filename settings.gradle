@@ -1,0 +1,3 @@
+rootProject.name = "Atom_d"
+include ':app'
+include ':d2d'
