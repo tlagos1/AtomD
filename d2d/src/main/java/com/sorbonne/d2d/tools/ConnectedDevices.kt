@@ -19,4 +19,8 @@ class ConnectedDevices {
     fun isEmpty(): Boolean{
         return connectedDevices.isEmpty()
     }
+
+    fun getDeviceParameters(endPointId: String): String {
+        return connectedDevices[endPointId].toString()
+    }
 }

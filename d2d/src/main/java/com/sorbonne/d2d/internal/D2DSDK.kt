@@ -86,6 +86,8 @@ class D2DSDK {
             when(connectionResolution.status.statusCode){
                 CommonStatusCodes.SUCCESS -> {
                     viewModel.isConnected.value = true
+                    viewModel.connectedDevices.value =
+                        JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$endDeviceName\"}")
                     connectedDevices.addNewDevice(endPointId, endDeviceName)
                 }
                 ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED -> {
@@ -94,6 +96,8 @@ class D2DSDK {
         }
 
         override fun onDisconnected(endPointId: String) {
+            viewModel.disconnectedDevices.value =
+                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"${connectedDevices.getDeviceParameters(endPointId)}\"}")
             connectedDevices.removeDevice(endPointId)
             if(connectedDevices.isEmpty()){
                 viewModel.isConnected.value = false
@@ -118,6 +122,12 @@ class D2DSDK {
         }
         viewModel.lostDevice.observe(owner){ endPointInfo ->
             listener?.onEndPointsDiscovered(false, endPointInfo)
+        }
+        viewModel.connectedDevices.observe(owner){ endPointInfo ->
+            listener?.onDeviceConnected(true, endPointInfo)
+        }
+        viewModel.disconnectedDevices.observe(owner){ endPointInfo ->
+            listener?.onDeviceConnected(false, endPointInfo)
         }
     }
 
@@ -189,6 +199,8 @@ class D2DSDK {
     fun disconnectFromDevice(endPointId: String){
         connectionClient?.let {
             it.disconnectFromEndpoint(endPointId)
+            viewModel.disconnectedDevices.value =
+                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"${connectedDevices.getDeviceParameters(endPointId)}\"}")
             connectedDevices.removeDevice(endPointId)
 
             if(connectedDevices.isEmpty()){
