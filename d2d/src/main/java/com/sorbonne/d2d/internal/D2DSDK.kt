@@ -50,12 +50,24 @@ class D2DSDK {
     }.contains(PackageManager.PERMISSION_DENIED)
 
     private val payloadCallback = object: PayloadCallback(){
+
+        private var payloadById = mutableMapOf<Long, Payload>()
+
         override fun onPayloadReceived(endPointId: String, payload: Payload) {
-            TODO("Not yet implemented")
+            payloadById[payload.id] = payload
         }
 
         override fun onPayloadTransferUpdate(endPointId: String, payloadTransferUpdate: PayloadTransferUpdate) {
-            TODO("Not yet implemented")
+            when(payloadTransferUpdate.status){
+                PayloadTransferUpdate.Status.SUCCESS -> {
+                    val receivedPayload = payloadById.remove(payloadTransferUpdate.payloadId)
+                    when(receivedPayload?.type){
+                        Payload.Type.BYTES -> {
+                            viewModel.receivedChunk.value = receivedPayload
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -137,6 +149,9 @@ class D2DSDK {
         viewModel.disconnectedDevices.observe(owner){ endPointInfo ->
             listener?.onDeviceConnected(false, endPointInfo)
         }
+        viewModel.receivedChunk.observe(owner){ payload ->
+            listener?.onReceivedChunk(payload)
+        }
     }
 
     fun startDiscovery(strategy: Strategy, lowPower: Boolean){
@@ -192,6 +207,12 @@ class D2DSDK {
                     stopDiscoveringOrAdvertising()
                 }
             }
+        }
+    }
+
+    fun sendPayloadByDeviceId(endPoint: String, payload: Payload){
+        connectedDevices.getDeviceIdByDeviceName(endPoint)?.let{ endPointId ->
+            connectionClient?.sendPayload(endPointId, payload)
         }
     }
 

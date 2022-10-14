@@ -2,6 +2,7 @@ package com.sorbonne.d2d.internal
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.google.android.gms.nearby.connection.Payload
 import org.json.JSONObject
 
 class D2DViewModel: ViewModel() {
@@ -14,4 +15,5 @@ class D2DViewModel: ViewModel() {
     val connectedDevices: MutableLiveData<JSONObject> = MutableLiveData(JSONObject())
     val disconnectedDevices: MutableLiveData<JSONObject> = MutableLiveData(JSONObject())
 
+    val receivedChunk:MutableLiveData<Payload> = MutableLiveData(Payload.fromBytes(byteArrayOf()))
 }

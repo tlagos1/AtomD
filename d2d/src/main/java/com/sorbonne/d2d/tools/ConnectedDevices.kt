@@ -8,6 +8,7 @@ class ConnectedDevices {
 
     fun addNewDevice(endPointId: String, endPointName: String){
         val  parameters = JSONObject()
+        parameters.put("endPointId", endPointId)
         parameters.put("deviceName", endPointName)
         connectedDevices[endPointId] = parameters
     }
@@ -34,5 +35,14 @@ class ConnectedDevices {
 
     fun getDeviceParameters(endPointId: String): String {
         return connectedDevices[endPointId].toString()
+    }
+
+    fun getDeviceIdByDeviceName(deviceName: String): String? {
+        connectedDevices.values.forEach{ parameters ->
+            if(parameters.get("deviceName") == deviceName){
+                return parameters.getString("endPointId")
+            }
+        }
+        return null
     }
 }

@@ -14,6 +14,7 @@ import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.NavHostFragment
+import com.google.android.gms.nearby.connection.Payload
 import com.sorbonne.atom_d.ui.dashboard.DashboardFragment
 import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
@@ -112,6 +113,17 @@ class MainActivity : AppCompatActivity(), D2DListener {
         navHostFragment?.childFragmentManager?.fragments?.forEach{
             try {
                 (it as? RelaySelectionFragment)?.onDeviceConnected(isActive, endPointInfo)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onReceivedChunk(payload: Payload) {
+        super.onReceivedChunk(payload)
+        navHostFragment?.childFragmentManager?.fragments?.forEach{
+            try {
+                (it as? RelaySelectionFragment)?.onReceivedChunk(payload)
             } catch (e: Exception){
                 e.printStackTrace()
             }

@@ -3,6 +3,7 @@ package com.sorbonne.d2d
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.LifecycleOwner
+import com.google.android.gms.nearby.connection.Payload
 import com.sorbonne.d2d.internal.D2DSDK
 import com.google.android.gms.nearby.connection.Strategy
 
@@ -47,6 +48,10 @@ object D2D {
 
     fun stopAll(){
         instance.sdk?.stopAll()
+    }
+
+    fun sendPayloadByDeviceId(endPoint: String, payload: Payload){
+        instance.sdk?.sendPayloadByDeviceId(endPoint, payload)
     }
 
     fun sendSetOfChunks(){

@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.nearby.connection.ConnectionType
+import com.google.android.gms.nearby.connection.Payload
 import com.google.android.gms.nearby.connection.Strategy
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
@@ -18,13 +19,16 @@ import com.sorbonne.atom_d.MainActivity
 import com.sorbonne.atom_d.R
 import com.sorbonne.atom_d.adapters.RelaySelectionColumnAdapter
 import com.sorbonne.atom_d.guard
+import com.sorbonne.atom_d.services.Socket
 import com.sorbonne.atom_d.services.socket.SocketListener
 import com.sorbonne.atom_d.tools.CustomRecyclerView
 import com.sorbonne.atom_d.tools.JsonServerMessage
+import com.sorbonne.atom_d.tools.MessageBytes
 import com.sorbonne.atom_d.tools.MyAlertDialogFragment
 import com.sorbonne.d2d.D2DListener
 import org.json.JSONObject
 import java.net.InetSocketAddress
+import java.nio.charset.StandardCharsets
 
 class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
     companion object {
@@ -96,11 +100,7 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                 if(selectedRole?.checkedButtonId == R.id.relay_selection_role_disc){
                     isDiscoverer = true
 
-                    viewModel.deviceId?.let { deviceId ->
-                        viewModel.socketService?.initSocketConnection(InetSocketAddress("192.168.1.100",33235),
-                            deviceId
-                        )
-                    }
+
 
                     viewModel.instance?.startDiscovery(
                         Strategy.P2P_POINT_TO_POINT,
@@ -108,6 +108,13 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                     )
                 } else if(selectedRole?.checkedButtonId == R.id.relay_selection_role_adv) {
                     isDiscoverer = false
+
+                    viewModel.deviceId?.let { deviceId ->
+                        viewModel.socketService?.initSocketConnection(InetSocketAddress("192.168.1.100",33235),
+                            deviceId
+                        )
+                    }
+
                     viewModel.instance?.startAdvertising(
                         viewModel.deviceId!!,
                         Strategy.P2P_POINT_TO_POINT,
@@ -166,7 +173,18 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                             null
                         )
                     } else {
-                        //TODO
+                        val d2dMessage = MessageBytes()
+                        val serverMessage = message.toString()
+
+                        d2dMessage.buildRegularPacket(
+                            MessageBytes.INFO_PACKET,
+                            serverMessage.toByteArray(StandardCharsets.UTF_8)
+                        )
+
+                        viewModel.instance?.sendPayloadByDeviceId(
+                            displayMessageParameters.getString("target"),
+                            Payload.fromBytes(d2dMessage.buffer)
+                        )
                     }
                 }
             }
@@ -193,7 +211,7 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
             relaySelectionPlayersConnected.add(parameters)
             adapter.notifyItemInserted(relaySelectionPlayersConnected.lastIndex)
 
-            if(isDiscoverer) {
+            if(!isDiscoverer) {
                 val notifySocket = JsonServerMessage.newConnection(
                     JsonServerMessage.NewConnectionOptions.D2D_DEVICE_CONNECTION,
                     endPointInfo.get("endPointName").toString()
@@ -221,8 +239,38 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                             singleRole.isEnabled = true
                         }
                         viewModel.instance?.stopAll()
+                        if(!isDiscoverer){
+                            viewModel.socketService?.disconnectSocket()
+                        }
                     }
                     return
+                }
+            }
+        }
+    }
+
+    override fun onReceivedChunk(payload: Payload) {
+        super.onReceivedChunk(payload)
+
+        val receivedPayload = MessageBytes(payload.asBytes())
+
+        if(receivedPayload.type == MessageBytes.INFO_PACKET){
+            val jsonMessage = JSONObject(String(receivedPayload.payload,StandardCharsets.UTF_8))
+            Log.e(TAG, jsonMessage.toString())
+            if(jsonMessage.getInt("command") == Socket.JsonCommands.SERVER_MESSAGE.ordinal){
+                if(jsonMessage.getString("value") == "display_message"){
+                    val messageParameters = JSONObject(jsonMessage.getString("parameters"))
+                    MyAlertDialogFragment.showDialog(
+                        parentFragmentManager,
+                        TAG,
+                        "Alert",
+                        messageParameters.getString("message"),
+                        R.drawable.ic_alert_dialog_info_24,
+                        false,
+                        MyAlertDialogFragment.MESSAGE_TYPE.ALERT_INFO,
+                        null,
+                        null
+                    )
                 }
             }
         }
