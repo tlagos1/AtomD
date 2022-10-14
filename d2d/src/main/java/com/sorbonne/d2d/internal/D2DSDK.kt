@@ -223,6 +223,11 @@ class D2DSDK {
             it.stopAllEndpoints()
             viewModel.isDiscoveryActive.value = false
             viewModel.isConnected.value = false
+
+            connectedDevices.getEndPointIds().forEach{ endPointId ->
+                viewModel.disconnectedDevices.value =  JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"${connectedDevices.getDeviceParameters(endPointId)}\"}")
+            }
+            connectedDevices.clear()
         }
     }
 
