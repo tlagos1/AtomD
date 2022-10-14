@@ -1,5 +1,6 @@
 package com.sorbonne.atom_d.tools
 
+import com.sorbonne.atom_d.services.Socket
 import org.json.JSONObject
 
 class JsonServerMessage {
@@ -15,7 +16,7 @@ class JsonServerMessage {
             val jsonMessage = JSONObject()
             val messageParameter = JSONObject()
 
-            jsonMessage.put("command", SocketConnection.JsonCommands.NOTIFY_SERVER.ordinal)
+            jsonMessage.put("command", Socket.JsonCommands.NOTIFY_SERVER.ordinal)
             jsonMessage.put("value", "NEW CONNECTION")
 
             messageParameter.put("type", type.name)
@@ -30,7 +31,7 @@ class JsonServerMessage {
             val jsonMessage = JSONObject()
             val messageParameter = JSONObject()
 
-            jsonMessage.put("command", SocketConnection.JsonCommands.NOTIFY_SERVER.ordinal)
+            jsonMessage.put("command", Socket.JsonCommands.NOTIFY_SERVER.ordinal)
             jsonMessage.put("value", value)
 
             return jsonMessage
@@ -41,7 +42,7 @@ class JsonServerMessage {
             val jsonMessage = JSONObject()
             val messageParameter = JSONObject()
 
-            jsonMessage.put("command", SocketConnection.JsonCommands.NOTIFY_SERVER.ordinal)
+            jsonMessage.put("command", Socket.JsonCommands.NOTIFY_SERVER.ordinal)
             jsonMessage.put("value", "D2D DISCONNECTION")
 
             messageParameter.put("id", id)

@@ -57,4 +57,5 @@ object D2D {
     fun getRequiredPermissions(): List<String>? {
         return instance.sdk?.permissions
     }
+
 }

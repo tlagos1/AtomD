@@ -15,7 +15,7 @@ import java.io.Serializable;
 
 public class MyAlertDialogFragment extends DialogFragment {
 
-    String TAG = LogExporter.class.getSimpleName();
+    String TAG = MyAlertDialogFragment.class.getSimpleName();
 
     public enum MESSAGE_TYPE  {
         ALERT_INFO,
@@ -126,7 +126,7 @@ public class MyAlertDialogFragment extends DialogFragment {
                 .create();
     }
 
-    public static DialogFragment showDialog(FragmentManager manager, String TAG, String title, String message, int iconId, boolean isCancelable, MyAlertDialogFragment.MESSAGE_TYPE type, Runnable functionOk, Runnable functionCancel) {
+    public static DialogFragment showDialog(FragmentManager manager, String TAG, String title, String message, int iconId, boolean isCancelable, MESSAGE_TYPE type, Runnable functionOk, Runnable functionCancel) {
 
         DialogFragment newFragment = MyAlertDialogFragment.newInstance(
                 title,

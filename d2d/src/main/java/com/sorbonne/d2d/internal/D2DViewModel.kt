@@ -11,6 +11,4 @@ class D2DViewModel: ViewModel() {
 
     val foundDevice: MutableLiveData<JSONObject> = MutableLiveData(JSONObject())
     val lostDevice: MutableLiveData<JSONObject> = MutableLiveData(JSONObject())
-
-
 }

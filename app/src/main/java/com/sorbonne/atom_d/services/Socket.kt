@@ -1,8 +1,10 @@
 package com.sorbonne.atom_d.services
 
 import android.app.Notification
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
@@ -38,6 +40,8 @@ class Socket : Service() {
     private var notificationManager : NotificationManager?= null
     private val channelId = "channel_2"
 
+
+
     /*==========================================================================================*/
     //                                     socket
     /*==========================================================================================*/
@@ -59,6 +63,18 @@ class Socket : Service() {
         NOTIFY_SERVER
     }
 
+    override fun onCreate() {
+        super.onCreate()
+
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager!!.createNotificationChannel(
+            NotificationChannel(
+                channelId,
+                getString(R.string.app_name),
+                NotificationManager.IMPORTANCE_LOW)
+        )
+    }
+
     fun setListener(owner: LifecycleOwner, listener: SocketListener){
         viewModel.receivedMessage.observe(owner){ message ->
             listener.receivedMessage(message)
@@ -68,7 +84,6 @@ class Socket : Service() {
     fun initSocketConnection(serverAddress: SocketAddress, deviceId: String){
         socketThread = Thread(initSocket(serverAddress, deviceId))
         socketThread?.start()
-        Log.e(tag,"initSocketConnection")
     }
 
     fun sendMessage(message: String){
@@ -131,7 +146,7 @@ class Socket : Service() {
                 val decoder = Charset.forName("UTF-8").newDecoder()
                 receivedMessage.flip()
 
-                viewModel.receivedMessage.value = JSONObject(decoder.decode(receivedMessage).toString())
+                viewModel.receivedMessage.postValue(JSONObject(decoder.decode(receivedMessage).toString()))
             }
         } catch ( e: IOException){
             e.printStackTrace()
@@ -282,7 +297,9 @@ class Socket : Service() {
         val builder = NotificationCompat.Builder(this, channelId)
             .setContentText(notificationAlert)
             .setContentTitle(ServiceUtils.getDeviceToDeviceTitle(this))
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.mipmap.ic_atom_launcher)
+            .setWhen(System.currentTimeMillis())
+        builder.setChannelId(channelId)
         return builder.build()
     }
 

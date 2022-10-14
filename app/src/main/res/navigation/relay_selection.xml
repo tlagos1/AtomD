@@ -3,25 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/navigation_relay_selection_kt"
-    app:startDestination="@id/relaySelectionKt">
-
+    app:startDestination="@id/relaySelectionFragment2">
     <fragment
-        android:id="@+id/relaySelectionKt"
-        android:name="com.sorbonne.atom_d.ui.relay_selection.RelaySelectionKt"
-        android:label="relay_selection_kt_fragment"
-        tools:layout="@layout/fragment_relay_selection_kt">
-        <argument
-            android:name="d2dRelaySelectionKtInstance"
-            android:defaultValue="@null"
-            app:argType="com.sorbonne.atom_d.service.DeviceToDeviceServiceKt"
-            app:nullable="true" />
-    </fragment>
-    <action
-        android:id="@+id/action_global_RelaySelectionKtFragment"
-        app:destination="@id/relaySelectionKt"
-        app:enterAnim="@anim/nav_default_enter_anim"
-        app:exitAnim="@anim/nav_default_exit_anim"
-        app:popEnterAnim="@anim/nav_default_pop_enter_anim"
-        app:popExitAnim="@anim/nav_default_pop_exit_anim"/>
-
+        android:id="@+id/relaySelectionFragment2"
+        android:name="com.sorbonne.atom_d.ui.relay_selection.RelaySelectionFragment"
+        android:label="fragment_relay_selection"
+        tools:layout="@layout/fragment_relay_selection" />
 </navigation>

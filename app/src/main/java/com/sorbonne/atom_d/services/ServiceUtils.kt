@@ -1,10 +1,10 @@
 package com.sorbonne.atom_d.services;
 
 import android.content.Context
+import com.sorbonne.atom_d.R
 import java.text.DateFormat;
 import java.util.Date;
 
-import fr.hopcast.app.demo.R;
 
 class ServiceUtils {
 

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">AtomD_SDK</string>
+    <string name="service_updated">AtomD: %1$s</string>
 </resources>
