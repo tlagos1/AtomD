@@ -20,6 +20,18 @@ class ConnectedDevices {
         return connectedDevices.isEmpty()
     }
 
+    fun clear(){
+        connectedDevices.clear()
+    }
+
+    fun getDevices(): MutableCollection<JSONObject> {
+        return connectedDevices.values
+    }
+
+    fun getEndPointIds(): MutableSet<String> {
+        return connectedDevices.keys
+    }
+
     fun getDeviceParameters(endPointId: String): String {
         return connectedDevices[endPointId].toString()
     }

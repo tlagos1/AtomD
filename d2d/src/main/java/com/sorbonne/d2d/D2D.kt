@@ -43,6 +43,14 @@ object D2D {
         instance.sdk?.startAdvertising(deviceName, strategy, lowPower, connectionType)
     }
 
+    fun stopDiscoveringOrAdvertising(){
+        instance.sdk?.stopDiscoveringOrAdvertising()
+    }
+
+    fun stopAll(){
+        instance.sdk?.stopAll()
+    }
+
     fun sendSetOfChunks(){
 
     }
