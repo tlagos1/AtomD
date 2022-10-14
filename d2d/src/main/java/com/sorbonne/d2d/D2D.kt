@@ -17,8 +17,6 @@ object D2D {
         END_CONNECTIVITY
     }
 
-
-
     class Builder(private val owner: LifecycleOwner, val deviceName: String, val context: Context){
         private var listener: D2DListener?= null
 

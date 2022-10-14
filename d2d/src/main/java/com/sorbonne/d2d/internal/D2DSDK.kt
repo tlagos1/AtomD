@@ -105,7 +105,7 @@ class D2DSDK {
 
         override fun onDisconnected(endPointId: String) {
             viewModel.disconnectedDevices.value =
-                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"${connectedDevices.getDeviceParameters(endPointId)}\"}")
+                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": ${connectedDevices.getDeviceParameters(endPointId)}}")
             connectedDevices.removeDevice(endPointId)
             if(connectedDevices.isEmpty()){
                 viewModel.isConnected.value = false
@@ -230,13 +230,15 @@ class D2DSDK {
     }
 
     fun stopAll(){
+        isDiscoveringAdvertising = false
+
         connectionClient?.let {
             it.stopAllEndpoints()
             viewModel.isDiscoveryActive.value = false
             viewModel.isConnected.value = false
 
             connectedDevices.getEndPointIds().forEach{ endPointId ->
-                viewModel.disconnectedDevices.value =  JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"${connectedDevices.getDeviceParameters(endPointId)}\"}")
+                viewModel.disconnectedDevices.value =  JSONObject("{\"endPointId\": \"$endPointId\", \"endPointParameters\": ${connectedDevices.getDeviceParameters(endPointId)}}")
             }
             connectedDevices.clear()
         }

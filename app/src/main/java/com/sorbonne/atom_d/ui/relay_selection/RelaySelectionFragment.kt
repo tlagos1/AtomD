@@ -40,6 +40,11 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
 
     private var isDiscoverer = false
 
+    var startRelaySelection: Button ?=null
+    var stopRelaySelection: Button ?=null
+    var selectedRole: MaterialButtonToggleGroup ?= null
+    var bottomNavigationView: BottomNavigationView ?= null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this, RelaySelectionViewModel.Factory(context))[RelaySelectionViewModel::class.java]
@@ -65,30 +70,30 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
         ).recyclerView
 
         val deviceId : TextView = view.findViewById(R.id.relay_selection_device_id)
-        val startRelaySelection : Button = view.findViewById(R.id.relay_selection_start)
-        val stopRelaySelection : Button = view.findViewById(R.id.relay_selection_stop)
-        val selectedRole : MaterialButtonToggleGroup = view.findViewById(R.id.relay_selection_role)
-        val bottomNavigationView : BottomNavigationView = requireActivity().findViewById(R.id.bottom_nav)
+        startRelaySelection = view.findViewById(R.id.relay_selection_start)
+        stopRelaySelection = view.findViewById(R.id.relay_selection_stop)
+        selectedRole = view.findViewById(R.id.relay_selection_role)
+        bottomNavigationView = requireActivity().findViewById(R.id.bottom_nav)
         val performSelection : Button = view.findViewById(R.id.relay_selection_perform_selection)
 
         deviceId.text = viewModel.deviceId
 
-        startRelaySelection.setOnClickListener { start ->
+        startRelaySelection?.setOnClickListener { start ->
             viewModel.socketService = (context as? MainActivity).guard {}.socketService
 
             viewModel.socketService?.setListener(viewLifecycleOwner,this)
-            if (selectedRole.checkedButtonId == R.id.relay_selection_role_disc || selectedRole.checkedButtonId == R.id.relay_selection_role_adv) {
+            if (selectedRole?.checkedButtonId == R.id.relay_selection_role_disc || selectedRole?.checkedButtonId == R.id.relay_selection_role_adv) {
                 if(start.isEnabled){
                     start.isEnabled = false
-                    stopRelaySelection.isEnabled = true
+                    stopRelaySelection?.isEnabled = true
                 }
 
-                bottomNavigationView.menu.apply {
+                bottomNavigationView?.menu?.apply {
                     findItem(R.id.navigation_dashboard).isEnabled = false
                     findItem(R.id.navigation_experiment).isEnabled = false
                 }
 
-                if(selectedRole.checkedButtonId == R.id.relay_selection_role_disc){
+                if(selectedRole?.checkedButtonId == R.id.relay_selection_role_disc){
                     isDiscoverer = true
 
                     viewModel.deviceId?.let { deviceId ->
@@ -101,7 +106,7 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                         Strategy.P2P_POINT_TO_POINT,
                         false,
                     )
-                } else if(selectedRole.checkedButtonId == R.id.relay_selection_role_adv) {
+                } else if(selectedRole?.checkedButtonId == R.id.relay_selection_role_adv) {
                     isDiscoverer = false
                     viewModel.instance?.startAdvertising(
                         viewModel.deviceId!!,
@@ -111,29 +116,29 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                     )
                 }
 
-                for (index in 0 until selectedRole.childCount){
-                    val singleRole = selectedRole.getChildAt(index) as MaterialButton
+                for (index in 0 until selectedRole!!.childCount){
+                    val singleRole = selectedRole!!.getChildAt(index) as MaterialButton
                     singleRole.isEnabled = false
                 }
             }
         }
 
-        stopRelaySelection.setOnClickListener { stop ->
+        stopRelaySelection?.setOnClickListener { stop ->
             if(stop.isEnabled){
                 stop.isEnabled = false
-                startRelaySelection.isEnabled = true
+                startRelaySelection?.isEnabled = true
             }
 
-            bottomNavigationView.menu.apply {
+            bottomNavigationView?.menu?.apply {
                 findItem(R.id.navigation_dashboard).isEnabled = true
                 findItem(R.id.navigation_experiment).isEnabled = true
             }
 
-            for (index in 0 until selectedRole.childCount){
-                val singleRole = selectedRole.getChildAt(index) as MaterialButton
+            for (index in 0 until selectedRole!!.childCount){
+                val singleRole = selectedRole!!.getChildAt(index) as MaterialButton
                 singleRole.isEnabled = true
             }
-
+            viewModel.instance?.stopAll()
             viewModel.socketService?.disconnectSocket()
         }
     }
@@ -173,8 +178,10 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
 
     override fun onDeviceConnected(isActive: Boolean, endPointInfo: JSONObject) {
         super.onDeviceConnected(isActive, endPointInfo)
-
         if(isActive){
+
+            viewModel.instance?.stopDiscoveringOrAdvertising()
+
             val parameters = JSONObject()
             parameters.put("endPointId", endPointInfo.get("endPointId"))
             parameters.put("deviceId", endPointInfo.get("endPointName"))
@@ -194,11 +201,27 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                 viewModel.socketService?.sendMessage(notifySocket.toString())
             }
 
+
         }else{
             relaySelectionPlayersConnected.forEachIndexed{ index, parameters ->
                 if(parameters.get("endPointId") == endPointInfo.get("endPointId")) {
                     adapter.notifyItemRemoved(index)
                     relaySelectionPlayersConnected.removeAt(index)
+                    if(relaySelectionPlayersConnected.isEmpty()){
+                        startRelaySelection?.isEnabled = true
+                        stopRelaySelection?.isEnabled = false
+
+                        bottomNavigationView?.menu?.apply {
+                            findItem(R.id.navigation_dashboard).isEnabled = true
+                            findItem(R.id.navigation_experiment).isEnabled = true
+                        }
+
+                        for (index2 in 0 until selectedRole!!.childCount){
+                            val singleRole = selectedRole!!.getChildAt(index2) as MaterialButton
+                            singleRole.isEnabled = true
+                        }
+                        viewModel.instance?.stopAll()
+                    }
                     return
                 }
             }
