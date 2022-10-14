@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.relay_selection.RelaySelectionKt">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:weightSum="1"
+        tools:ignore="UselessParent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!--            <com.google.android.material.chip.ChipGroup-->
+            <!--                    android:id="@+id/chipGroup"-->
+            <!--                    android:layout_width="wrap_content"-->
+            <!--                    android:layout_height="wrap_content"-->
+            <!--                    android:layout_gravity="center_horizontal"-->
+            <!--                    app:layout_constraintEnd_toEndOf="parent"-->
+            <!--                    app:layout_constraintStart_toStartOf="parent"-->
+            <!--                    app:layout_constraintTop_toTopOf="parent">-->
+
+            <!--                    <com.google.android.material.chip.Chip-->
+            <!--                        android:id="@+id/relay_selection_status_idle"-->
+            <!--                        android:layout_width="wrap_content"-->
+            <!--                        android:layout_height="wrap_content"-->
+            <!--                        android:text="@string/dashboard_idle_text"-->
+            <!--                        android:textColor="#616161"-->
+            <!--                        app:chipIcon="@drawable/ic_idle_connection_24"-->
+            <!--                        tools:layout_editor_absoluteX="179dp"-->
+            <!--                        tools:layout_editor_absoluteY="197dp" />-->
+
+            <!--                    <com.google.android.material.chip.Chip-->
+            <!--                        android:id="@+id/relay_selection_status_discovering"-->
+            <!--                        android:layout_width="wrap_content"-->
+            <!--                        android:layout_height="wrap_content"-->
+            <!--                        android:text="@string/dashboard_discovering_text"-->
+            <!--                        app:chipIcon="@drawable/ic_discovering_24" />-->
+
+            <!--                    <com.google.android.material.chip.Chip-->
+            <!--                        android:id="@+id/relay_selection_status_connected"-->
+            <!--                        android:layout_width="wrap_content"-->
+            <!--                        android:layout_height="wrap_content"-->
+            <!--                        android:text="@string/dashboard_connected_text"-->
+            <!--                        android:textColor="#616161"-->
+            <!--                        app:chipIcon="@drawable/ic_nearby_grey600_48dp" />-->
+
+            <!--                </com.google.android.material.chip.ChipGroup>-->
+
+            <TextView
+                android:id="@+id/relay_selection_device_id"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dp"
+                android:gravity="center"
+                android:text="TextView" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:layout_weight="0.25">
+            <LinearLayout
+                android:id="@+id/relay_selection_animated_frame"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:layout_margin="10dp"
+                android:background="@drawable/layout_border">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="1"
+                    android:background="@drawable/layout_border"
+                    android:baselineAligned="false">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_weight="0.168">
+
+                        <TextView
+                            android:id="@+id/relay_selection_recycleview_id"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="left"
+                            android:layout_margin="10dp"
+                            android:text="Id" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:layout_weight="0.208">
+
+                        <TextView
+                            android:id="@+id/relay_selection_recycleview_cn_dl"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:ems="10"
+                            android:text="CnDl"
+                            android:gravity="center"
+                            android:textAlignment="center"/>
+                    </LinearLayout>
+
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:layout_weight="0.208">
+
+                        <TextView
+                            android:id="@+id/relay_selection_recycleview_bttr"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:ems="10"
+                            android:text="Battery"
+                            android:gravity="center"
+                            android:textAlignment="center"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:layout_weight="0.208">
+
+                        <TextView
+                            android:id="@+id/relay_selection_recycleview_t_put"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:ems="10"
+                            android:text="Tput"
+                            android:gravity="center"
+                            android:textAlignment="center"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:layout_weight="0.208">
+
+                        <TextView
+                            android:id="@+id/relay_selection_recycleview_rank"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:ems="10"
+                            android:text="Rank"
+                            android:gravity="center"
+                            android:textAlignment="center"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/relay_selection_connected_devices"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="0.75"
+            android:orientation="horizontal"
+            android:weightSum="1"
+            android:baselineAligned="false">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:layout_weight="0.4"
+                tools:ignore="NestedWeights"
+                android:gravity="center_horizontal">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/relay_selection_role"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:selectionRequired="true"
+                        app:singleSelection="true"
+                        android:gravity="center">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/relay_selection_role_adv"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Adv"/>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/relay_selection_role_disc"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Disc"/>
+
+
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginHorizontal="15dp">
+                    <Button
+                        android:id="@+id/relay_selection_perform_selection"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:enabled="false"
+                        android:text="relay selection" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:layout_weight="0.6">
+
+                <Button
+                    android:id="@+id/relay_selection_start"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Start" />
+                <Button
+                    android:id="@+id/relay_selection_stop"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Stop"
+                    android:enabled="false"/>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>
