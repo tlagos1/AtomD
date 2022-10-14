@@ -1,11 +1,11 @@
-package com.sorbonne.atom_d.adapter;
+package com.sorbonne.atom_d.adapters;
 
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.sorbonne.atom_d.viewHolders.RelaySelectionColumnViewHolder;
+import com.sorbonne.atom_d.view_holders.RelaySelectionColumnViewHolder;
 
 import org.json.JSONException;
 import org.json.JSONObject;

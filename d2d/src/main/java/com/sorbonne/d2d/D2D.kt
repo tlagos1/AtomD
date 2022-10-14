@@ -1,6 +1,7 @@
 package com.sorbonne.d2d
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.LifecycleOwner
 import com.sorbonne.d2d.internal.D2DSDK
 import com.google.android.gms.nearby.connection.Strategy

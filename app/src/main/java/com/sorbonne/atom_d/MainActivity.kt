@@ -19,6 +19,8 @@ import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.sorbonne.atom_d.services.Socket
+import com.sorbonne.atom_d.ui.relay_selection.RelaySelectionFragment
+import org.json.JSONObject
 
 
 class MainActivity : AppCompatActivity(), D2DListener {
@@ -98,6 +100,18 @@ class MainActivity : AppCompatActivity(), D2DListener {
         navHostFragment?.childFragmentManager?.fragments?.forEach{
             try {
                 (it as? DashboardFragment)?.onDiscoveryChange(active)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+
+    override fun onDeviceConnected(isActive: Boolean, endPointInfo: JSONObject) {
+        super.onDeviceConnected(isActive, endPointInfo)
+        navHostFragment?.childFragmentManager?.fragments?.forEach{
+            try {
+                (it as? RelaySelectionFragment)?.onDeviceConnected(isActive, endPointInfo)
             } catch (e: Exception){
                 e.printStackTrace()
             }

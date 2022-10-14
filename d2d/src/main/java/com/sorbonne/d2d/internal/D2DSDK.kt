@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.usb.UsbEndpoint
 import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.sorbonne.d2d.D2DListener
@@ -12,9 +13,11 @@ import com.sorbonne.d2d.tools.ConnectedDevices
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.nearby.Nearby
 import com.google.android.gms.nearby.connection.*
+import com.sorbonne.d2d.D2D
 import org.json.JSONObject
 
 class D2DSDK {
+    private val TAG = D2DSDK::class.simpleName
 
     private val viewModel = D2DViewModel()
     private var connectionClient: ConnectionsClient?=null
@@ -58,6 +61,7 @@ class D2DSDK {
 
     private val endpointDiscoveryCallback = object : EndpointDiscoveryCallback(){
         override fun onEndpointFound(endPointId: String, discoveredEndpointInfo: DiscoveredEndpointInfo) {
+            Log.i(TAG, "onEndpointFound: $endPointId - ${discoveredEndpointInfo.endpointName}")
             connectionClient?.requestConnection(
                 deviceName,
                 endPointId,
@@ -68,6 +72,7 @@ class D2DSDK {
         }
 
         override fun onEndpointLost(endPointId: String) {
+            Log.i(TAG, "onEndpointLost: endPointId")
             viewModel.lostDevice.value = JSONObject()
                 .put("endPointId", endPointId)
         }
@@ -78,6 +83,7 @@ class D2DSDK {
         private var endDeviceName = ""
 
         override fun onConnectionInitiated(endPointId: String, connectionInfo: ConnectionInfo) {
+            Log.i(TAG, "onConnectionInitiated from $endPointId")
             connectionClient?.acceptConnection(endPointId, payloadCallback)
             endDeviceName = connectionInfo.endpointName
         }
@@ -85,10 +91,12 @@ class D2DSDK {
         override fun onConnectionResult(endPointId: String, connectionResolution: ConnectionResolution) {
             when(connectionResolution.status.statusCode){
                 CommonStatusCodes.SUCCESS -> {
+                    Log.i(TAG, "onConnectionResult -> SUCCESS - $endPointId")
                     viewModel.isConnected.value = true
                     viewModel.connectedDevices.value =
                         JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$endDeviceName\"}")
                     connectedDevices.addNewDevice(endPointId, endDeviceName)
+
                 }
                 ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED -> {
                 }
@@ -147,9 +155,11 @@ class D2DSDK {
                     endpointDiscoveryCallback,
                     discoveryOption
                 ).addOnSuccessListener {
+                    Log.i(TAG, "Device Discovering")
                     viewModel.isDiscoveryActive.value = true
                     isDiscoveringAdvertising = true
                 }.addOnFailureListener {
+                    Log.e(TAG, it.toString())
                     stopDiscoveringOrAdvertising()
                 }
             }
@@ -161,7 +171,6 @@ class D2DSDK {
             stopDiscoveringOrAdvertising()
             return
         }
-
         val advertisingOptions = AdvertisingOptions.Builder()
             .setStrategy(strategy)
             .setLowPower(lowPower)
@@ -175,9 +184,11 @@ class D2DSDK {
                     connectionLifecycleCallback,
                     advertisingOptions
                 ).addOnSuccessListener {
+                    Log.i(TAG, "Device Advertising")
                     viewModel.isDiscoveryActive.value = true
                     isDiscoveringAdvertising = true
                 }.addOnFailureListener{
+                    Log.e(TAG, it.toString())
                     stopDiscoveringOrAdvertising()
                 }
             }

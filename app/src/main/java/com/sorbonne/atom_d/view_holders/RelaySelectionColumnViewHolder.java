@@ -1,4 +1,4 @@
-package com.sorbonne.atom_d.viewHolders;
+package com.sorbonne.atom_d.view_holders;
 
 import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
@@ -13,8 +13,6 @@ import com.sorbonne.atom_d.R;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.List;
 
 public class RelaySelectionColumnViewHolder extends RecyclerView.ViewHolder {
 
