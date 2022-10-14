@@ -1,6 +1,4 @@
-package com.sorbonne.atom_d.tools;
-
-import android.util.Log;
+package com.sorbonne.atom_d;
 
 import java.util.Arrays;
 
