@@ -12,7 +12,6 @@ import androidx.room.PrimaryKey
                 unique = true
             )
         ])
-
 data class ConnectionAttempts(
     @PrimaryKey(autoGenerate = true)
     val id: Int,

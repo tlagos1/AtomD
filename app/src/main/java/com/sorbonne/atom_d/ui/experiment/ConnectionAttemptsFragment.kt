@@ -14,7 +14,7 @@ import com.sorbonne.atom_d.R
 import com.sorbonne.atom_d.adapters.single_column.ConnectionAttemptsAdapter
 import com.sorbonne.atom_d.entities.DatabaseRepository
 import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttempts
-import com.sorbonne.atom_d.ui.CustomRecyclerView
+import com.sorbonne.atom_d.tools.CustomRecyclerView
 
 class ConnectionAttemptsFragment : Fragment()  {
 
