@@ -9,6 +9,7 @@ import com.sorbonne.atom_d.entities.DatabaseRepository
 import com.sorbonne.atom_d.entities.chunk_experiments.ChunkExperiments
 import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttempts
 import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
+import com.sorbonne.atom_d.entities.file_experiments.FileExperiments
 import kotlinx.coroutines.launch
 
 
@@ -27,6 +28,20 @@ class ExperimentViewModel(private val repository: DatabaseRepository) : ViewMode
 
     fun deleteChunkExperiment(name: String) = viewModelScope.launch{
         repository.deleteChunkExperiment(name)
+    }
+
+    // file_experiments
+
+    fun getAllFileExperiments(): LiveData<List<FileExperiments>>{
+        return repository.getAllFileExperiments()
+    }
+
+    fun insertFileExperiment(fileExperiments: FileExperiments) = viewModelScope.launch {
+        repository.insertFileExperiment(fileExperiments)
+    }
+
+    fun deleteFileExperiment(name: String) = viewModelScope.launch {
+        repository.deleteFileExperiment(name)
     }
 
     // connection_attempts

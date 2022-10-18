@@ -68,6 +68,9 @@ class DeleteExperimentFragment : Fragment()  {
                             "CHUNK" ->
                                 viewModel.deleteChunkExperiment(experimentName)
 
+                            "FILE" ->
+                                viewModel.deleteFileExperiment(experimentName)
+
                             "DISCOVERY" ->
                                 viewModel.deleteConnectionAttempts(experimentName)
                         }

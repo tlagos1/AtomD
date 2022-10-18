@@ -17,6 +17,10 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.chip.Chip
 import com.google.android.gms.nearby.connection.Strategy
 import com.sorbonne.atom_d.R
+import com.sorbonne.atom_d.adapters.double_column.AdapterCategoryType
+import com.sorbonne.atom_d.adapters.double_column.FullExperimentsAdapter
+import com.sorbonne.atom_d.entities.DatabaseRepository
+import com.sorbonne.atom_d.tools.CustomRecyclerView
 
 class DashboardFragment : Fragment(), D2DListener {
 
@@ -32,7 +36,7 @@ class DashboardFragment : Fragment(), D2DListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProvider(this, DashboardViewModel.Factory(context))[DashboardViewModel::class.java]
+        viewModel = ViewModelProvider(this, DashboardViewModel.Factory(context, DatabaseRepository(requireActivity().application)))[DashboardViewModel::class.java]
         viewModel.instance = (context as? MainActivity).guard { return }.d2d
         viewModel.deviceId = (context as? MainActivity).guard { return }.androidId
     }
@@ -50,6 +54,16 @@ class DashboardFragment : Fragment(), D2DListener {
         val deviceId:TextView = view.findViewById(R.id.dashboard_device_id)
         val initD2D: Button = view.findViewById(R.id.dashboard_start_d2d)
         val selectedRole : MaterialButtonToggleGroup = view.findViewById(R.id.dashboard_role)
+
+        val dashboardAdapter = FullExperimentsAdapter(AdapterCategoryType.RADIOBUTTON_TEXTVIEW)
+        CustomRecyclerView(
+            requireContext(),
+            view.findViewById(R.id.dashboard_recyclerView),
+            dashboardAdapter,
+            CustomRecyclerView.CustomLayoutManager.LINEAR_LAYOUT
+        ).getRecyclerView()
+        viewModel.getAllExperimentsName().observe(requireActivity(), dashboardAdapter::submitList)
+
 
         discoveryState = view.findViewById(R.id.dashboard_status_discovering)
         connectionState = view.findViewById(R.id.dashboard_status_connected)

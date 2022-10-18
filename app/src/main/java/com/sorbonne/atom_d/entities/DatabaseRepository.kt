@@ -7,10 +7,13 @@ import com.sorbonne.atom_d.entities.chunk_experiments.ChunkExperimentsDao
 import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttempts
 import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttemptsDao
 import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
+import com.sorbonne.atom_d.entities.file_experiments.FileExperiments
+import com.sorbonne.atom_d.entities.file_experiments.FileExperimentsDao
 
 class DatabaseRepository(application: Application){
 
     private var chunkExperimentsDao: ChunkExperimentsDao
+    private var fileExperimentsDao: FileExperimentsDao
     private var connectionAttemptsDao: ConnectionAttemptsDao
     private var customQueriesDao: CustomQueriesDao
 
@@ -18,6 +21,7 @@ class DatabaseRepository(application: Application){
         val db = RoomDatabase.getDatabase(application)
 
         chunkExperimentsDao = db.chunkExperimentsDao()
+        fileExperimentsDao = db.FileExperimentsDao()
         connectionAttemptsDao = db.connectionAttemptsDao()
         customQueriesDao = db.customQueriesDao()
     }
@@ -28,14 +32,6 @@ class DatabaseRepository(application: Application){
      * =========================================================================
      */
 
-    // Room executes all queries on a separate thread.
-    // You must call this on a non-UI thread or your app will throw an exception. Room ensures
-    // that you're not doing any long running operations on the main thread, blocking the UI.
-    /*
-     * =========================================================================
-     * Message
-     * =========================================================================
-     */
     fun getAllChunks(): LiveData<List<ChunkExperiments>> {
         return chunkExperimentsDao.getMessages()
     }
@@ -50,6 +46,24 @@ class DatabaseRepository(application: Application){
 
     fun chunkExperimentExists(name: String, size: Int, attempts: Int): Boolean {
         return chunkExperimentsDao.messageExists(name, size, attempts)
+    }
+
+    /*
+     * =========================================================================
+     * File Experiments
+     * =========================================================================
+     */
+
+    fun getAllFileExperiments(): LiveData<List<FileExperiments>> {
+        return fileExperimentsDao.getFiles()
+    }
+
+    suspend fun insertFileExperiment(fileExperiments: FileExperiments){
+        fileExperimentsDao.insert(fileExperiments)
+    }
+
+    suspend fun deleteFileExperiment(name: String){
+        fileExperimentsDao.delete(name)
     }
 
     /*
