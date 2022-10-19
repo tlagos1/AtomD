@@ -94,20 +94,20 @@ interface CustomQueriesDao {
 
     @Query(
         ("SELECT " +
-//                "   experiment_name, " +
-//                "   \"MESSAGE\" AS type," +
-//                "   message_attempts AS attempts, " +
-//                "   message_size as size " +
-//                "FROM message_table " +
-//                "   UNION " +
-//                "SELECT " +
-//                "   experiment_name, " +
-//                "   \"FILE\"  AS type," +
-//                "   number_of_tries AS attempts, " +
-//                "   file_size as size " +
-//                "FROM files_table" +
-//                "   UNION " +
-//                "SELECT " +
+                "   experiment_name, " +
+                "   \"CHUNK\" AS type," +
+                "   message_attempts AS attempts, " +
+                "   message_size as size " +
+                "FROM chunk_experiments " +
+                "   UNION " +
+                "SELECT " +
+                "   experiment_name, " +
+                "   \"FILE\"  AS type," +
+                "   number_of_tries AS attempts, " +
+                "   file_size as size " +
+                "FROM file_experiments" +
+                "   UNION " +
+                "SELECT " +
                 "   experiment_name," +
                 "   \"DISCOVERY\" AS type, " +
                 "   number_of_repetitions AS attempts," +

@@ -12,7 +12,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavDirections
 import androidx.navigation.Navigation.findNavController
 import com.sorbonne.atom_d.R
+import com.sorbonne.atom_d.adapters.double_column.AdapterCategoryType
+import com.sorbonne.atom_d.adapters.double_column.FullExperimentsAdapter
 import com.sorbonne.atom_d.entities.DatabaseRepository
+import com.sorbonne.atom_d.tools.CustomRecyclerView
 
 class ExperimentFragment : Fragment() {
 
@@ -28,9 +31,7 @@ class ExperimentFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val rootView = inflater.inflate(R.layout.fragment_experiment, container, false)
-
-        return rootView
+        return  inflater.inflate(R.layout.fragment_experiment, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -40,6 +41,17 @@ class ExperimentFragment : Fragment() {
         val toNewFile = view.findViewById<Button>(R.id.experiment_new_file)
         val toConnectionAttempt = view.findViewById<Button>(R.id.experiment_new_discover_repetitions)
         val toDeleteExp = view.findViewById<Button>(R.id.experiment_delete_experiment)
+
+        val experimentsAdapter = FullExperimentsAdapter(AdapterCategoryType.TEXTVIEW_TEXTVIEW)
+
+        CustomRecyclerView(
+            requireContext(),
+            view.findViewById(R.id.Experiment_RecyclerView),
+            experimentsAdapter,
+            CustomRecyclerView.CustomLayoutManager.LINEAR_LAYOUT
+        ).getRecyclerView()
+
+        viewModel.getAllExperimentsName().observe(requireActivity(), experimentsAdapter::submitList)
 
         toNewChunk.setOnClickListener {
             val action: NavDirections =
