@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.view.View
+import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.NavHostFragment
@@ -20,14 +21,12 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity(), D2DListener {
 
-    private val tag = MainActivity::class.simpleName
+    private val TAG = MainActivity::class.simpleName
 
     private lateinit var viewModel: MainViewModel
 
-
     private lateinit var navHostFragment: NavHostFragment
     private lateinit var appBarConfiguration: AppBarConfiguration
-
 
     var d2d: D2D ?= null
     var androidId: String ?= null
@@ -35,18 +34,17 @@ class MainActivity : AppCompatActivity(), D2DListener {
     private val requestPermissionsLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         val isGranted = !result.containsValue(false)
         if (isGranted) {
-            Log.i(tag, "permissions granted")
+            Log.i(TAG, "permissions granted")
         }
         else {
             result.filter { !it.value }.keys.forEach { permission ->
-                Log.w(tag, "permission $permission missing")
+                Log.w(TAG, "permission $permission missing")
             }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         viewModel = ViewModelProvider(this, MainViewModel.Factory(this))[MainViewModel::class.java]
 
         @SuppressLint("HardwareIds")
@@ -64,7 +62,6 @@ class MainActivity : AppCompatActivity(), D2DListener {
 
         viewModel.instance = d2d
 
-
         setContentView(R.layout.activity_main)
         findViewById<View>(R.id.main_layout)
 
@@ -77,9 +74,9 @@ class MainActivity : AppCompatActivity(), D2DListener {
         appBarConfiguration = AppBarConfiguration(
             setOf(R.id.dashboardFragment, R.id.experimentFragment, R.id. aboutUsFragment)
         )
-
         setupActionBarWithNavController(navController, appBarConfiguration)
 
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     override fun onConnectivityChange(active: Boolean) {

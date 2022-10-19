@@ -16,8 +16,6 @@ object D2D {
         END_CONNECTIVITY
     }
 
-
-
     class Builder(private val owner: LifecycleOwner, val deviceName: String, val context: Context){
         private var listener: D2DListener?= null
 
@@ -40,6 +38,20 @@ object D2D {
 
     fun startAdvertising(deviceName: String, strategy: Strategy, lowPower: Boolean, connectionType: Int){
         instance.sdk?.startAdvertising(deviceName, strategy, lowPower, connectionType)
+    }
+
+    fun isConnected(): Boolean {
+        instance.sdk?.let {
+            return it.isConnected()
+        }
+        return false
+    }
+
+    fun isDiscovering(): Boolean{
+        instance.sdk?.let {
+            return it.isDiscovering()
+        }
+        return false
     }
 
     fun stopDiscoveringOrAdvertising(){

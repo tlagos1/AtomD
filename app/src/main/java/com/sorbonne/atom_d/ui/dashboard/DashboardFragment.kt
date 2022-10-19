@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import androidx.navigation.Navigation
 import com.sorbonne.atom_d.MainActivity
 import com.sorbonne.atom_d.guard
 import com.sorbonne.d2d.D2DListener
@@ -24,9 +25,7 @@ import com.sorbonne.atom_d.tools.CustomRecyclerView
 
 class DashboardFragment : Fragment(), D2DListener {
 
-    companion object {
-        fun newInstance() = DashboardFragment()
-    }
+    private val TAG = DashboardFragment::class.simpleName
 
     private lateinit var viewModel: DashboardViewModel
     private val strategy = Strategy.P2P_STAR
@@ -37,6 +36,8 @@ class DashboardFragment : Fragment(), D2DListener {
     private lateinit var initD2D: Button
     private lateinit var startExperiment: Button
     private lateinit var stopExperiment: Button
+
+    private var viewInstanceState: Bundle ?= null
 
     private var isExperimentRunning = false
 
@@ -62,6 +63,7 @@ class DashboardFragment : Fragment(), D2DListener {
         val selectedRole: MaterialButtonToggleGroup = view.findViewById(R.id.dashboard_role)
         startExperiment = view.findViewById(R.id.dashboard_start_experiment)
         stopExperiment = view.findViewById(R.id.dashboard_stop_experiment)
+        val endDevicesDiscovered: Button = view.findViewById(R.id.dashboard_playerList)
 
         startExperiment.isEnabled = false
         stopExperiment.isEnabled = false
@@ -103,32 +105,38 @@ class DashboardFragment : Fragment(), D2DListener {
             stopExperiment()
             viewModel.instance?.stopAll()
         }
+
+        endDevicesDiscovered.setOnClickListener {
+            val action = DashboardFragmentDirections.actionDashboardFragmentToEndpointsDiscoveredFragment()
+            Navigation.findNavController(view).navigate(action)
+        }
+
+        if(viewInstanceState != null){
+            isExperimentRunning = viewInstanceState!!.getBoolean("isExperimentRunning")
+            viewModel.instance?.let {
+                setConnectedStatus(it.isConnected())
+                setDiscoveringStatus(it.isDiscovering())
+            }
+            viewInstanceState = null
+        }
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        viewInstanceState = Bundle()
+        viewInstanceState!!.putBoolean("isExperimentRunning", isExperimentRunning)
+    }
 
     override fun onDiscoveryChange(active: Boolean) {
         super.onDiscoveryChange(active)
-        Log.e(tag, active.toString())
-        if(active){
-            discoveryState?.setChipBackgroundColorResource(R.color.light_coral)
-        }else{
-            discoveryState?.setChipBackgroundColorResource(R.color.light_grey)
-        }
+        setDiscoveringStatus(active)
     }
 
     override fun onConnectivityChange(active: Boolean) {
         super.onConnectivityChange(active)
-        if(active){
-            if(!isExperimentRunning){
-                startExperiment.isEnabled = true
-            }
-            connectionState?.setChipBackgroundColorResource(R.color.light_coral)
+        setConnectedStatus(active)
+        if(!isExperimentRunning){
             viewModel.instance?.stopDiscoveringOrAdvertising()
-        }else{
-            if(!isExperimentRunning){
-                stopExperiment()
-            }
-            connectionState?.setChipBackgroundColorResource(R.color.light_grey)
         }
     }
 
@@ -137,5 +145,31 @@ class DashboardFragment : Fragment(), D2DListener {
         initD2D.isEnabled = true
         startExperiment.isEnabled = false
         stopExperiment.isEnabled = false
+    }
+
+    private fun setConnectedStatus(state: Boolean){
+        if(state){
+            connectionState?.setChipBackgroundColorResource(R.color.light_coral)
+            if(!isExperimentRunning){
+                startExperiment.isEnabled = true
+            }
+            stopExperiment.isEnabled = true
+            initD2D.isEnabled = false
+        } else {
+            connectionState?.setChipBackgroundColorResource(R.color.light_grey)
+            if(!isExperimentRunning){
+                stopExperiment()
+            }
+        }
+    }
+
+    private fun setDiscoveringStatus(state: Boolean){
+        if(state){
+            discoveryState?.setChipBackgroundColorResource(R.color.light_coral)
+            stopExperiment.isEnabled = true
+            initD2D.isEnabled = false
+        } else {
+            discoveryState?.setChipBackgroundColorResource(R.color.light_grey)
+        }
     }
 }
