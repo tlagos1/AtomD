@@ -1,9 +1,6 @@
 package com.sorbonne.atom_d
 
 import android.annotation.SuppressLint
-import android.content.ComponentName
-import android.content.Intent
-import android.content.ServiceConnection
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
@@ -14,7 +11,9 @@ import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.NavHostFragment
-import com.google.android.gms.nearby.connection.Payload
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
 import com.sorbonne.atom_d.ui.dashboard.DashboardFragment
 import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
@@ -29,9 +28,8 @@ class MainActivity : AppCompatActivity(), D2DListener {
     private val tag = MainActivity::class.simpleName
     private lateinit var viewModel: MainViewModel
 
-    private val navHostFragment: NavHostFragment? by lazy {
-        supportFragmentManager.findFragmentById(R.id.nav_host_container) as? NavHostFragment
-    }
+    private lateinit var navHostFragment: NavHostFragment
+    private lateinit var appBarConfiguration: AppBarConfiguration
 
     private var socketServiceIntent: Intent ?= null
     private var isSocketServiceBound = false
@@ -80,14 +78,23 @@ class MainActivity : AppCompatActivity(), D2DListener {
 
         findViewById<View>(R.id.main_layout)
 
-        if(savedInstanceState==null) {
-            setupBottomNavigation()
-        }
+        navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_container) as NavHostFragment
+
+        val navController = navHostFragment.navController
+        findViewById<BottomNavigationView>(R.id.bottom_nav).setupWithNavController(navController)
+
+        appBarConfiguration = AppBarConfiguration(
+            setOf(R.id.dashboardFragment, R.id.experimentFragment, R.id. aboutUsFragment)
+        )
+
+        setupActionBarWithNavController(navController, appBarConfiguration)
+
     }
 
     override fun onConnectivityChange(active: Boolean) {
         super.onConnectivityChange(active)
-        navHostFragment?.childFragmentManager?.fragments?.forEach{
+        navHostFragment.childFragmentManager.fragments.forEach{
             try {
                 (it as? DashboardFragment)?.onConnectivityChange(active)
             } catch (e: Exception){
@@ -98,7 +105,7 @@ class MainActivity : AppCompatActivity(), D2DListener {
 
     override fun onDiscoveryChange(active: Boolean) {
         super.onDiscoveryChange(active)
-        navHostFragment?.childFragmentManager?.fragments?.forEach{
+        navHostFragment.childFragmentManager.fragments.forEach{
             try {
                 (it as? DashboardFragment)?.onDiscoveryChange(active)
             } catch (e: Exception){
@@ -155,27 +162,7 @@ class MainActivity : AppCompatActivity(), D2DListener {
         super.onDestroy()
         stopService(Intent(this, Socket::class.java))
     }
-
-
-    private fun setupBottomNavigation(){
-        val bottomNavigationView : BottomNavigationView = findViewById(R.id.bottom_nav)
-
-        val navGraphList = mutableListOf<Int>()
-        navGraphList.add(R.navigation.relay_selection)
-        navGraphList.add(R.navigation.dashboard)
-        navGraphList.add(R.navigation.experiment)
-        navGraphList.add(R.navigation.about_us)
-        
-        NavigationExtensions()
-            .setupWithNavController(
-                bottomNavigationView,
-                navGraphList,
-                supportFragmentManager,
-                R.id.nav_host_container,
-                intent
-            )
-    }
-
+    
     private val SocketServiceConnection : ServiceConnection = object : ServiceConnection{
         override fun onServiceConnected(componentName: ComponentName?, service: IBinder?) {
             socketService = (service as Socket.LocalBinder).getService()
