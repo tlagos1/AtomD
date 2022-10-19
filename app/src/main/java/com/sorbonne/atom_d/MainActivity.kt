@@ -1,6 +1,9 @@
 package com.sorbonne.atom_d
 
 import android.annotation.SuppressLint
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
@@ -14,6 +17,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.google.android.gms.nearby.connection.Payload
 import com.sorbonne.atom_d.ui.dashboard.DashboardFragment
 import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
@@ -85,7 +89,7 @@ class MainActivity : AppCompatActivity(), D2DListener {
         findViewById<BottomNavigationView>(R.id.bottom_nav).setupWithNavController(navController)
 
         appBarConfiguration = AppBarConfiguration(
-            setOf(R.id.dashboardFragment, R.id.experimentFragment, R.id. aboutUsFragment)
+            setOf(R.id.relaySelectionFragment2, R.id.dashboardFragment, R.id.experimentFragment, R.id. aboutUsFragment)
         )
 
         setupActionBarWithNavController(navController, appBarConfiguration)

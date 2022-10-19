@@ -71,7 +71,7 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
             view.findViewById(R.id.relay_selection_connected_devices),
             adapter,
             CustomRecyclerView.CustomLayoutManager.LINEAR_LAYOUT
-        ).recyclerView
+        ).getRecyclerView()
 
         val deviceId : TextView = view.findViewById(R.id.relay_selection_device_id)
         startRelaySelection = view.findViewById(R.id.relay_selection_start)
