@@ -9,6 +9,9 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
 import com.sorbonne.atom_d.ui.dashboard.DashboardFragment
 import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
@@ -22,9 +25,8 @@ class MainActivity : AppCompatActivity(), D2DListener {
     private lateinit var viewModel: MainViewModel
 
 
-    private val navHostFragment: NavHostFragment? by lazy {
-        supportFragmentManager.findFragmentById(R.id.nav_host_container) as? NavHostFragment
-    }
+    private lateinit var navHostFragment: NavHostFragment
+    private lateinit var appBarConfiguration: AppBarConfiguration
 
 
     var d2d: D2D ?= null
@@ -66,14 +68,23 @@ class MainActivity : AppCompatActivity(), D2DListener {
         setContentView(R.layout.activity_main)
         findViewById<View>(R.id.main_layout)
 
-        if(savedInstanceState==null) {
-            setupBottomNavigation()
-        }
+        navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_container) as NavHostFragment
+
+        val navController = navHostFragment.navController
+        findViewById<BottomNavigationView>(R.id.bottom_nav).setupWithNavController(navController)
+
+        appBarConfiguration = AppBarConfiguration(
+            setOf(R.id.dashboardFragment, R.id.experimentFragment, R.id. aboutUsFragment)
+        )
+
+        setupActionBarWithNavController(navController, appBarConfiguration)
+
     }
 
     override fun onConnectivityChange(active: Boolean) {
         super.onConnectivityChange(active)
-        navHostFragment?.childFragmentManager?.fragments?.forEach{
+        navHostFragment.childFragmentManager.fragments.forEach{
             try {
                 (it as? DashboardFragment)?.onConnectivityChange(active)
             } catch (e: Exception){
@@ -84,7 +95,7 @@ class MainActivity : AppCompatActivity(), D2DListener {
 
     override fun onDiscoveryChange(active: Boolean) {
         super.onDiscoveryChange(active)
-        navHostFragment?.childFragmentManager?.fragments?.forEach{
+        navHostFragment.childFragmentManager.fragments.forEach{
             try {
                 (it as? DashboardFragment)?.onDiscoveryChange(active)
             } catch (e: Exception){
@@ -98,24 +109,5 @@ class MainActivity : AppCompatActivity(), D2DListener {
         d2d?.getRequiredPermissions()?.let {
             requestPermissionsLauncher.launch(it.toTypedArray())
         }
-    }
-
-
-    private fun setupBottomNavigation(){
-        val bottomNavigationView : BottomNavigationView = findViewById(R.id.bottom_nav)
-
-        val navGraphList = mutableListOf<Int>()
-        navGraphList.add(R.navigation.dashboard)
-        navGraphList.add(R.navigation.experiment)
-        navGraphList.add(R.navigation.about_us)
-        
-        NavigationExtensions()
-            .setupWithNavController(
-                bottomNavigationView,
-                navGraphList,
-                supportFragmentManager,
-                R.id.nav_host_container,
-                intent
-            )
     }
 }
