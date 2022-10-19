@@ -34,10 +34,14 @@ class D2DSDK {
             add(Manifest.permission.CHANGE_WIFI_STATE)
             add(Manifest.permission.ACCESS_COARSE_LOCATION)
             add(Manifest.permission.ACCESS_FINE_LOCATION)
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 add(Manifest.permission.BLUETOOTH_ADVERTISE)
                 add(Manifest.permission.BLUETOOTH_CONNECT)
                 add(Manifest.permission.BLUETOOTH_SCAN)
+            }
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+                add(Manifest.permission.NEARBY_WIFI_DEVICES)
             }
         }
     }
@@ -97,7 +101,7 @@ class D2DSDK {
 
         override fun onDisconnected(endPointId: String) {
             viewModel.disconnectedDevices.value =
-                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"${connectedDevices.getDeviceParameters(endPointId)}\"}")
+                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": ${connectedDevices.getDeviceParameters(endPointId)}}")
             connectedDevices.removeDevice(endPointId)
             if(connectedDevices.isEmpty()){
                 viewModel.isConnected.value = false
@@ -225,7 +229,7 @@ class D2DSDK {
             viewModel.isConnected.value = false
 
             connectedDevices.getEndPointIds().forEach{ endPointId ->
-                viewModel.disconnectedDevices.value =  JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"${connectedDevices.getDeviceParameters(endPointId)}\"}")
+                viewModel.disconnectedDevices.value =  JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": ${connectedDevices.getDeviceParameters(endPointId)}}")
             }
             connectedDevices.clear()
         }

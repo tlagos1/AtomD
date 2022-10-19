@@ -34,6 +34,12 @@ class DashboardFragment : Fragment(), D2DListener {
     private var discoveryState: Chip?= null
     private var connectionState: Chip?= null
 
+    private lateinit var initD2D: Button
+    private lateinit var startExperiment: Button
+    private lateinit var stopExperiment: Button
+
+    private var isExperimentRunning = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this, DashboardViewModel.Factory(context, DatabaseRepository(requireActivity().application)))[DashboardViewModel::class.java]
@@ -51,9 +57,14 @@ class DashboardFragment : Fragment(), D2DListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val deviceId:TextView = view.findViewById(R.id.dashboard_device_id)
-        val initD2D: Button = view.findViewById(R.id.dashboard_start_d2d)
-        val selectedRole : MaterialButtonToggleGroup = view.findViewById(R.id.dashboard_role)
+        val deviceId: TextView = view.findViewById(R.id.dashboard_device_id)
+        initD2D = view.findViewById(R.id.dashboard_start_d2d)
+        val selectedRole: MaterialButtonToggleGroup = view.findViewById(R.id.dashboard_role)
+        startExperiment = view.findViewById(R.id.dashboard_start_experiment)
+        stopExperiment = view.findViewById(R.id.dashboard_stop_experiment)
+
+        startExperiment.isEnabled = false
+        stopExperiment.isEnabled = false
 
         val dashboardAdapter = FullExperimentsAdapter(AdapterCategoryType.RADIOBUTTON_TEXTVIEW)
         CustomRecyclerView(
@@ -71,6 +82,8 @@ class DashboardFragment : Fragment(), D2DListener {
         deviceId.text = viewModel.deviceId.toString()
 
         initD2D.setOnClickListener{
+            it.isEnabled = false
+            stopExperiment.isEnabled = true
             if(selectedRole.checkedButtonId == R.id.dashboard_role_disc || selectedRole.checkedButtonId == R.id.dashboard_role_adv){
                 if(selectedRole.checkedButtonId == R.id.dashboard_role_disc){
                     viewModel.instance?.startDiscovery(strategy, false)
@@ -81,24 +94,48 @@ class DashboardFragment : Fragment(), D2DListener {
                 }
             }
         }
+
+        startExperiment.setOnClickListener {
+            isExperimentRunning = true
+        }
+
+        stopExperiment.setOnClickListener {
+            stopExperiment()
+            viewModel.instance?.stopAll()
+        }
     }
+
 
     override fun onDiscoveryChange(active: Boolean) {
         super.onDiscoveryChange(active)
         Log.e(tag, active.toString())
         if(active){
-            discoveryState?.setChipBackgroundColorResource(R.color.light_coral);
+            discoveryState?.setChipBackgroundColorResource(R.color.light_coral)
         }else{
-            discoveryState?.setChipBackgroundColorResource(R.color.light_grey);
+            discoveryState?.setChipBackgroundColorResource(R.color.light_grey)
         }
     }
 
     override fun onConnectivityChange(active: Boolean) {
         super.onConnectivityChange(active)
         if(active){
-            connectionState?.setChipBackgroundColorResource(R.color.light_coral);
+            if(!isExperimentRunning){
+                startExperiment.isEnabled = true
+            }
+            connectionState?.setChipBackgroundColorResource(R.color.light_coral)
+            viewModel.instance?.stopDiscoveringOrAdvertising()
         }else{
-            connectionState?.setChipBackgroundColorResource(R.color.light_grey);
+            if(!isExperimentRunning){
+                stopExperiment()
+            }
+            connectionState?.setChipBackgroundColorResource(R.color.light_grey)
         }
+    }
+
+    private fun stopExperiment(){
+        isExperimentRunning = false
+        initD2D.isEnabled = true
+        startExperiment.isEnabled = false
+        stopExperiment.isEnabled = false
     }
 }

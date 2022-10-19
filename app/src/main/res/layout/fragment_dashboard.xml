@@ -282,7 +282,6 @@
                 android:id="@+id/dashboard_recyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
-
             </androidx.recyclerview.widget.RecyclerView>
         </LinearLayout>
 
@@ -294,13 +293,13 @@
 
             <Button
                 android:id="@+id/dashboard_start_experiment"
+                style="?android:attr/button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="0.5"
-                android:text="start"
                 android:layout_marginStart="10dp"
                 android:layout_marginEnd="5dp"
-                style="?android:attr/button"/>
+                android:layout_weight="0.5"
+                android:text="start" />
 
             <Button
                 android:id="@+id/dashboard_stop_experiment"
