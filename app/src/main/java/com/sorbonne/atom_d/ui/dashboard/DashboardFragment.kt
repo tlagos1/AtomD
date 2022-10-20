@@ -18,10 +18,11 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.chip.Chip
 import com.google.android.gms.nearby.connection.Strategy
 import com.sorbonne.atom_d.R
-import com.sorbonne.atom_d.adapters.double_column.AdapterCategoryType
-import com.sorbonne.atom_d.adapters.double_column.FullExperimentsAdapter
+import com.sorbonne.atom_d.adapters.EntityType
+import com.sorbonne.atom_d.adapters.double_column.EntityAdapterDoubleColumn
 import com.sorbonne.atom_d.entities.DatabaseRepository
 import com.sorbonne.atom_d.tools.CustomRecyclerView
+import com.sorbonne.atom_d.view_holders.DoubleColumnViewHolder
 
 class DashboardFragment : Fragment(), D2DListener {
 
@@ -68,7 +69,7 @@ class DashboardFragment : Fragment(), D2DListener {
         startExperiment.isEnabled = false
         stopExperiment.isEnabled = false
 
-        val dashboardAdapter = FullExperimentsAdapter(AdapterCategoryType.RADIOBUTTON_TEXTVIEW)
+        val dashboardAdapter = EntityAdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView, EntityType.CustomQueries)
         CustomRecyclerView(
             requireContext(),
             view.findViewById(R.id.dashboard_recyclerView),

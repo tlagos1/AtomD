@@ -8,11 +8,13 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.sorbonne.atom_d.R
 
-enum class SingleColumnType {
-    TextView, RadioButton
-}
+
 
 class SingleColumnViewHolder(itemView: View, type: SingleColumnType) : RecyclerView.ViewHolder(itemView) {
+
+    enum class SingleColumnType {
+        TextView, RadioButton
+    }
 
     private lateinit var textViewData: TextView
     private lateinit var radioData: RadioButton
@@ -26,14 +28,20 @@ class SingleColumnViewHolder(itemView: View, type: SingleColumnType) : RecyclerV
         }
     }
 
-    fun bind(text: String?, isChecked: Boolean) {
-        radioData.isChecked = isChecked
-        radioData.text = text
+    fun bind(data: Any, type: SingleColumnType, isChecked: Boolean = false){
+        when(type){
+            SingleColumnType.TextView ->{
+                data as String
+                textViewData.text = data
+            }
+            SingleColumnType.RadioButton -> {
+                data as String
+                radioData.isChecked = isChecked
+                radioData.text = data
+            }
+        }
     }
 
-    fun bind(data: String?) {
-        textViewData.text = data
-    }
 
     companion object {
         fun create(parent: ViewGroup, type: SingleColumnType): SingleColumnViewHolder {
@@ -48,5 +56,4 @@ class SingleColumnViewHolder(itemView: View, type: SingleColumnType) : RecyclerV
             return SingleColumnViewHolder(view, type)
         }
     }
-
 }

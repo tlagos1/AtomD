@@ -6,16 +6,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavDirections
 import androidx.navigation.Navigation.findNavController
 import com.sorbonne.atom_d.R
-import com.sorbonne.atom_d.adapters.double_column.AdapterCategoryType
-import com.sorbonne.atom_d.adapters.double_column.FullExperimentsAdapter
+import com.sorbonne.atom_d.adapters.EntityType
+import com.sorbonne.atom_d.adapters.double_column.EntityAdapterDoubleColumn
 import com.sorbonne.atom_d.entities.DatabaseRepository
 import com.sorbonne.atom_d.tools.CustomRecyclerView
+import com.sorbonne.atom_d.view_holders.DoubleColumnViewHolder
 
 class ExperimentFragment : Fragment() {
 
@@ -42,7 +41,7 @@ class ExperimentFragment : Fragment() {
         val toConnectionAttempt = view.findViewById<Button>(R.id.experiment_new_discover_repetitions)
         val toDeleteExp = view.findViewById<Button>(R.id.experiment_delete_experiment)
 
-        val experimentsAdapter = FullExperimentsAdapter(AdapterCategoryType.TEXTVIEW_TEXTVIEW)
+        val experimentsAdapter = EntityAdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.TextViewTextView, EntityType.CustomQueries)
 
         CustomRecyclerView(
             requireContext(),

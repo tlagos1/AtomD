@@ -8,11 +8,13 @@ import android.widget.Button
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.sorbonne.atom_d.R
-import com.sorbonne.atom_d.adapters.double_column.AdapterCategoryType
-import com.sorbonne.atom_d.adapters.double_column.FullExperimentsAdapter
+import com.sorbonne.atom_d.adapters.EntityType
+import com.sorbonne.atom_d.adapters.double_column.EntityAdapterDoubleColumn
 import com.sorbonne.atom_d.entities.DatabaseRepository
+import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
 import com.sorbonne.atom_d.tools.CustomRecyclerView
 import com.sorbonne.atom_d.tools.MyAlertDialog
+import com.sorbonne.atom_d.view_holders.DoubleColumnViewHolder
 
 class DeleteExperimentFragment : Fragment()  {
 
@@ -32,7 +34,7 @@ class DeleteExperimentFragment : Fragment()  {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val deleteExperimentAdapter = FullExperimentsAdapter(AdapterCategoryType.RADIOBUTTON_TEXTVIEW)
+        val deleteExperimentAdapter = EntityAdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView, EntityType.CustomQueries)
 
         CustomRecyclerView(
             requireContext(),
@@ -48,12 +50,17 @@ class DeleteExperimentFragment : Fragment()  {
         submitButton.setOnClickListener {
             if(deleteExperimentAdapter.getLastCheckedPosition() > -1 &&
                 deleteExperimentAdapter.getLastCheckedPosition() < deleteExperimentAdapter.currentList.size){
-                val experimentName =
-                    deleteExperimentAdapter.currentList[deleteExperimentAdapter.getLastCheckedPosition()].experiment_name
-                val experimentType =
-                    deleteExperimentAdapter.currentList[deleteExperimentAdapter.getLastCheckedPosition()].type
-                val experimentSize: Long =
-                    deleteExperimentAdapter.currentList[deleteExperimentAdapter.getLastCheckedPosition()].size
+
+                var experimentName: String
+                var experimentType: String
+                var experimentSize: Long
+
+                deleteExperimentAdapter.currentList[deleteExperimentAdapter.getLastCheckedPosition()].let {
+                    it as CustomQueriesDao.AllExperimentsName
+                    experimentName = it.experiment_name
+                    experimentType = it.type
+                    experimentSize = it.size
+                }
 
                 MyAlertDialog.showDialog(
                     parentFragmentManager,
