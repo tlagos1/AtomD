@@ -29,7 +29,8 @@ import org.json.JSONObject
 
 class MainActivity : AppCompatActivity(), D2DListener {
 
-    private val tag = MainActivity::class.simpleName
+    private val TAG = MainActivity::class.simpleName
+
     private lateinit var viewModel: MainViewModel
 
     private lateinit var navHostFragment: NavHostFragment
@@ -45,18 +46,17 @@ class MainActivity : AppCompatActivity(), D2DListener {
     private val requestPermissionsLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         val isGranted = !result.containsValue(false)
         if (isGranted) {
-            Log.i(tag, "permissions granted")
+            Log.i(TAG, "permissions granted")
         }
         else {
             result.filter { !it.value }.keys.forEach { permission ->
-                Log.w(tag, "permission $permission missing")
+                Log.w(TAG, "permission $permission missing")
             }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         viewModel = ViewModelProvider(this, MainViewModel.Factory(this))[MainViewModel::class.java]
 
         @SuppressLint("HardwareIds")
@@ -76,7 +76,6 @@ class MainActivity : AppCompatActivity(), D2DListener {
 
         viewModel.instance = d2d
 
-
         setContentView(R.layout.activity_main)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
@@ -91,9 +90,9 @@ class MainActivity : AppCompatActivity(), D2DListener {
         appBarConfiguration = AppBarConfiguration(
             setOf(R.id.relaySelectionFragment2, R.id.dashboardFragment, R.id.experimentFragment, R.id. aboutUsFragment)
         )
-
         setupActionBarWithNavController(navController, appBarConfiguration)
 
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     override fun onConnectivityChange(active: Boolean) {

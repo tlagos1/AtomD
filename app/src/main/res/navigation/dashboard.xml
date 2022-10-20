@@ -9,5 +9,13 @@
         android:id="@+id/dashboardFragment"
         android:name="com.sorbonne.atom_d.ui.dashboard.DashboardFragment"
         android:label="fragment_dashboard"
-        tools:layout="@layout/fragment_dashboard" />
+        tools:layout="@layout/fragment_dashboard" >
+        <action
+            android:id="@+id/action_dashboardFragment_to_endpointsDiscoveredFragment"
+            app:destination="@id/endpointsDiscoveredFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/endpointsDiscoveredFragment"
+        android:name="com.sorbonne.atom_d.ui.dashboard.EndpointsDiscoveredFragment"
+        android:label="EndpointsDiscoveredFragment" />
 </navigation>

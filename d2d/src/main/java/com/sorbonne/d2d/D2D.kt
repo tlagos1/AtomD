@@ -42,6 +42,20 @@ object D2D {
         instance.sdk?.startAdvertising(deviceName, strategy, lowPower, connectionType)
     }
 
+    fun isConnected(): Boolean {
+        instance.sdk?.let {
+            return it.isConnected()
+        }
+        return false
+    }
+
+    fun isDiscovering(): Boolean{
+        instance.sdk?.let {
+            return it.isDiscovering()
+        }
+        return false
+    }
+
     fun stopDiscoveringOrAdvertising(){
         instance.sdk?.stopDiscoveringOrAdvertising()
     }

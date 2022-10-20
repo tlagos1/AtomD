@@ -77,7 +77,7 @@ class D2DSDK {
 
     private val endpointDiscoveryCallback = object : EndpointDiscoveryCallback(){
         override fun onEndpointFound(endPointId: String, discoveredEndpointInfo: DiscoveredEndpointInfo) {
-            Log.i(TAG, "onEndpointFound: $endPointId - ${discoveredEndpointInfo.endpointName}")
+            Log.i(TAG, "endPoint $endPointId - ${discoveredEndpointInfo.endpointName} discovered")
             connectionClient?.requestConnection(
                 deviceName,
                 endPointId,
@@ -88,7 +88,7 @@ class D2DSDK {
         }
 
         override fun onEndpointLost(endPointId: String) {
-            Log.i(TAG, "onEndpointLost: endPointId")
+            Log.i(TAG, "endPoint $endPointId lost")
             viewModel.lostDevice.value = JSONObject()
                 .put("endPointId", endPointId)
         }
@@ -107,7 +107,7 @@ class D2DSDK {
         override fun onConnectionResult(endPointId: String, connectionResolution: ConnectionResolution) {
             when(connectionResolution.status.statusCode){
                 CommonStatusCodes.SUCCESS -> {
-                    Log.i(TAG, "onConnectionResult -> SUCCESS - $endPointId")
+                    Log.i(TAG, "connected with  $endPointId - $endDeviceName")
                     viewModel.isConnected.value = true
                     viewModel.connectedDevices.value =
                         JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$endDeviceName\"}")
@@ -123,6 +123,9 @@ class D2DSDK {
             viewModel.disconnectedDevices.value =
                 JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": ${connectedDevices.getDeviceParameters(endPointId)}}")
             connectedDevices.removeDevice(endPointId)
+
+            Log.i(TAG, "disconnected from  $endPointId")
+
             if(connectedDevices.isEmpty()){
                 viewModel.isConnected.value = false
             }
@@ -177,8 +180,9 @@ class D2DSDK {
                     Log.i(TAG, "Device Discovering")
                     viewModel.isDiscoveryActive.value = true
                     isDiscoveringAdvertising = true
+                    Log.i(TAG, "Discoverer successfully started")
                 }.addOnFailureListener {
-                    Log.e(TAG, it.toString())
+                    it.printStackTrace()
                     stopDiscoveringOrAdvertising()
                 }
             }
@@ -206,8 +210,9 @@ class D2DSDK {
                     Log.i(TAG, "Device Advertising")
                     viewModel.isDiscoveryActive.value = true
                     isDiscoveringAdvertising = true
+                    Log.i(TAG, "Advertiser successfully started")
                 }.addOnFailureListener{
-                    Log.e(TAG, it.toString())
+                    it.printStackTrace()
                     stopDiscoveringOrAdvertising()
                 }
             }
@@ -218,6 +223,14 @@ class D2DSDK {
         connectedDevices.getDeviceIdByDeviceName(endPoint)?.let{ endPointId ->
             connectionClient?.sendPayload(endPointId, payload)
         }
+    }
+
+    fun isConnected(): Boolean{
+        return !connectedDevices.isEmpty()
+    }
+
+    fun isDiscovering(): Boolean{
+        return isDiscoveringAdvertising
     }
 
     fun sendSetOfChunks(){
@@ -239,6 +252,8 @@ class D2DSDK {
                 JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"${connectedDevices.getDeviceParameters(endPointId)}\"}")
             connectedDevices.removeDevice(endPointId)
 
+            Log.i(TAG, "disconnected from  $endPointId")
+
             if(connectedDevices.isEmpty()){
                 viewModel.isConnected.value = false
             }
@@ -250,6 +265,7 @@ class D2DSDK {
             it.stopDiscovery()
             it.stopAdvertising()
             viewModel.isDiscoveryActive.value = false
+            Log.i(TAG, "Discovery process stopped")
         }
         isDiscoveringAdvertising = false
     }
@@ -259,11 +275,13 @@ class D2DSDK {
 
         connectionClient?.let {
             it.stopAllEndpoints()
+            Log.i(TAG, "stopAllEndpoints")
             viewModel.isDiscoveryActive.value = false
             viewModel.isConnected.value = false
 
             connectedDevices.getEndPointIds().forEach{ endPointId ->
                 viewModel.disconnectedDevices.value =  JSONObject("{\"endPointId\": \"$endPointId\", \"endPointParameters\": ${connectedDevices.getDeviceParameters(endPointId)}}")
+                Log.i(TAG, "disconnected from  $endPointId")
             }
             connectedDevices.clear()
         }
