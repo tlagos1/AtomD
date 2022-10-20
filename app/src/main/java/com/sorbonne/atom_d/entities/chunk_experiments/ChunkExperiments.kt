@@ -17,7 +17,7 @@ data class ChunkExperiments(
     val id: Int,
 
     @ColumnInfo(name = "experiment_name")
-    val expName: String?,
+    val expName: String,
 
     @ColumnInfo(name = "message_size")
     val chunkSize: Int,

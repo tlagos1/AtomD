@@ -13,8 +13,10 @@ import android.view.View
 import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.gms.nearby.connection.Payload
@@ -33,6 +35,7 @@ class MainActivity : AppCompatActivity(), D2DListener {
 
     private lateinit var viewModel: MainViewModel
 
+    private lateinit var navController: NavController
     private lateinit var navHostFragment: NavHostFragment
     private lateinit var appBarConfiguration: AppBarConfiguration
 
@@ -84,7 +87,7 @@ class MainActivity : AppCompatActivity(), D2DListener {
         navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_container) as NavHostFragment
 
-        val navController = navHostFragment.navController
+        navController = navHostFragment.navController
         findViewById<BottomNavigationView>(R.id.bottom_nav).setupWithNavController(navController)
 
         appBarConfiguration = AppBarConfiguration(
@@ -93,6 +96,10 @@ class MainActivity : AppCompatActivity(), D2DListener {
         setupActionBarWithNavController(navController, appBarConfiguration)
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        return navController.navigateUp(appBarConfiguration)
     }
 
     override fun onConnectivityChange(active: Boolean) {

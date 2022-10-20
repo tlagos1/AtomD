@@ -10,11 +10,14 @@ import com.sorbonne.atom_d.R
 import org.json.JSONObject
 import org.w3c.dom.Text
 
-enum class SingleColumnType {
-    TextView, RadioButton, RelaySelection
-}
+
+
 
 class SingleColumnViewHolder(itemView: View, type: SingleColumnType) : RecyclerView.ViewHolder(itemView) {
+
+    enum class SingleColumnType {
+        TextView, RadioButton, RelaySelection
+    }
 
     private lateinit var textViewData: TextView
     private lateinit var radioData: RadioButton
@@ -41,24 +44,24 @@ class SingleColumnViewHolder(itemView: View, type: SingleColumnType) : RecyclerV
         }
     }
 
-    fun bind(deviceInfo: Any, type: SingleColumnType, isChecked: Boolean = false){
+    fun bind(data: Any, type: SingleColumnType, isChecked: Boolean = false){
         when(type){
             SingleColumnType.TextView ->{
-                deviceInfo as String
-                radioData.isChecked = isChecked
-                radioData.text = deviceInfo
+                data as String
+                textViewData.text = data
             }
             SingleColumnType.RadioButton -> {
-                deviceInfo as String
-                textViewData.text = deviceInfo
+                data as String
+                radioData.isChecked = isChecked
+                radioData.text = data
             }
             SingleColumnType.RelaySelection->{
-                deviceInfo as JSONObject
-                deviceId.text = deviceInfo.getString("deviceId")
-                connectionDelay.text = String.format("%.2f", deviceInfo.getDouble("connectionDelay"))
-                batteryLife.text = deviceInfo.getInt("batteryLife").toString()
-                throughput.text = String.format("%.2f", deviceInfo.getDouble("throughput"))
-                rank.text = String.format("%.2f", deviceInfo.getDouble("rank"))
+                data as JSONObject
+                deviceId.text = data.getString("deviceId")
+                connectionDelay.text = String.format("%.2f", data.getDouble("connectionDelay"))
+                batteryLife.text = data.getInt("batteryLife").toString()
+                throughput.text = String.format("%.2f", data.getDouble("throughput"))
+                rank.text = String.format("%.2f", data.getDouble("rank"))
             }
         }
     }
@@ -80,5 +83,4 @@ class SingleColumnViewHolder(itemView: View, type: SingleColumnType) : RecyclerV
             return SingleColumnViewHolder(view, type)
         }
     }
-
 }

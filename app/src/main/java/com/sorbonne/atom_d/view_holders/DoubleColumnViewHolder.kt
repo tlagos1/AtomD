@@ -8,12 +8,13 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.sorbonne.atom_d.R
 
-enum class DoubleColumnType{
-    TextViewTextView,
-    RadioButtonTextView
-}
 
 class DoubleColumnViewHolder(itemView: View, type: DoubleColumnType): RecyclerView.ViewHolder(itemView)  {
+
+    enum class DoubleColumnType{
+        TextViewTextView,
+        RadioButtonTextView
+    }
 
     private var textViewData: TextView
     private lateinit var secondTextViewData: TextView
@@ -32,15 +33,18 @@ class DoubleColumnViewHolder(itemView: View, type: DoubleColumnType): RecyclerVi
         }
     }
 
-    fun bind(isChecked: Boolean, radioText: String?, textViewText: String?) {
-        radioData.isChecked = isChecked
-        radioData.text = radioText
-        textViewData.text = textViewText
-    }
-
-    fun bind(data: String?, data2: String?) {
-        textViewData.text = data
-        secondTextViewData.text = data2
+    fun bind(data: Any, data2: Any, type: DoubleColumnType, isChecked: Boolean = false){
+        when(type){
+            DoubleColumnType.TextViewTextView -> {
+                textViewData.text = data as String
+                secondTextViewData.text = data2 as String
+            }
+            DoubleColumnType.RadioButtonTextView -> {
+                radioData.isChecked = isChecked
+                radioData.text = data as String
+                textViewData.text = data2 as String
+            }
+        }
     }
 
     companion object {

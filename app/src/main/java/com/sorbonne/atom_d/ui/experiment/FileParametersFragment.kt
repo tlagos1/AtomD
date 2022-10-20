@@ -13,11 +13,13 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.sorbonne.atom_d.R
-import com.sorbonne.atom_d.adapters.single_column.FileExperimentsAdapter
+import com.sorbonne.atom_d.adapters.EntityType
+import com.sorbonne.atom_d.adapters.single_column.EntityAdapterSingleColumn
 import com.sorbonne.atom_d.entities.DatabaseRepository
 import com.sorbonne.atom_d.entities.file_experiments.FileExperiments
 import com.sorbonne.atom_d.tools.CustomRecyclerView
 import com.sorbonne.atom_d.tools.MyInputFilter
+import com.sorbonne.atom_d.view_holders.SingleColumnViewHolder
 import java.io.IOException
 import kotlin.math.pow
 
@@ -46,7 +48,7 @@ class FileParametersFragment : Fragment()  {
         val customName = view.findViewById<CheckBox>(R.id.File_Experiment_Custom_Name)
         val submitButton = view.findViewById<Button>(R.id.File_Experiment_Submit)
 
-        val fileExperimentsAdapter = FileExperimentsAdapter()
+        val fileExperimentsAdapter = EntityAdapterSingleColumn(SingleColumnViewHolder.SingleColumnType.TextView, EntityType.FileExperiments)
         CustomRecyclerView(
             requireContext(),
             view.findViewById(R.id.File_Experiment_RecyclerView),
