@@ -25,7 +25,7 @@ import com.sorbonne.atom_d.tools.CustomRecyclerView
 import com.sorbonne.atom_d.tools.JsonServerMessage
 import com.sorbonne.atom_d.tools.MessageBytes
 import com.sorbonne.atom_d.tools.MyAlertDialog
-import com.sorbonne.atom_d.view_holders.SingleColumnType
+import com.sorbonne.atom_d.view_holders.SingleColumnViewHolder
 import com.sorbonne.d2d.D2DListener
 import org.json.JSONObject
 import java.net.InetSocketAddress
@@ -41,7 +41,7 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
     private lateinit var viewModel: RelaySelectionViewModel
 
     private var relaySelectionPlayersConnected = mutableListOf<JSONObject>()
-    private var adapter = SimpleSingleColumnAdapter(SingleColumnType.RelaySelection, relaySelectionPlayersConnected)
+    private var adapter = SimpleSingleColumnAdapter(SingleColumnViewHolder.SingleColumnType.RelaySelection, relaySelectionPlayersConnected)
 
     private var isDiscoverer = false
 
