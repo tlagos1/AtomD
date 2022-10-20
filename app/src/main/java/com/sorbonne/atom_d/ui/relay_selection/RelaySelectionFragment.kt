@@ -17,14 +17,15 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.sorbonne.atom_d.MainActivity
 import com.sorbonne.atom_d.R
-import com.sorbonne.atom_d.adapters.RelaySelectionColumnAdapter
+import com.sorbonne.atom_d.adapters.single_column.SimpleSingleColumnAdapter
 import com.sorbonne.atom_d.guard
 import com.sorbonne.atom_d.services.Socket
 import com.sorbonne.atom_d.services.socket.SocketListener
 import com.sorbonne.atom_d.tools.CustomRecyclerView
 import com.sorbonne.atom_d.tools.JsonServerMessage
 import com.sorbonne.atom_d.tools.MessageBytes
-import com.sorbonne.atom_d.tools.MyAlertDialogFragment
+import com.sorbonne.atom_d.tools.MyAlertDialog
+import com.sorbonne.atom_d.view_holders.SingleColumnType
 import com.sorbonne.d2d.D2DListener
 import org.json.JSONObject
 import java.net.InetSocketAddress
@@ -40,7 +41,7 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
     private lateinit var viewModel: RelaySelectionViewModel
 
     private var relaySelectionPlayersConnected = mutableListOf<JSONObject>()
-    private var adapter = RelaySelectionColumnAdapter(relaySelectionPlayersConnected)
+    private var adapter = SimpleSingleColumnAdapter(SingleColumnType.RelaySelection, relaySelectionPlayersConnected)
 
     private var isDiscoverer = false
 
@@ -161,14 +162,14 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                 if (message.getString("value") == "display_message"){
                     val displayMessageParameters = message.getJSONObject("parameters")
                     if (displayMessageParameters.getString("target") == viewModel.deviceId) {
-                        MyAlertDialogFragment.showDialog(
+                        MyAlertDialog.showDialog(
                             parentFragmentManager,
                             TAG,
                             "Alert",
                             displayMessageParameters.getString("message"),
                             R.drawable.ic_alert_dialog_info_24,
                             false,
-                            MyAlertDialogFragment.MESSAGE_TYPE.ALERT_INFO,
+                            MyAlertDialog.MESSAGE_TYPE.ALERT_INFO,
                             null,
                             null
                         )
@@ -260,14 +261,14 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
             if(jsonMessage.getInt("command") == Socket.JsonCommands.SERVER_MESSAGE.ordinal){
                 if(jsonMessage.getString("value") == "display_message"){
                     val messageParameters = JSONObject(jsonMessage.getString("parameters"))
-                    MyAlertDialogFragment.showDialog(
+                    MyAlertDialog.showDialog(
                         parentFragmentManager,
                         TAG,
                         "Alert",
                         messageParameters.getString("message"),
                         R.drawable.ic_alert_dialog_info_24,
                         false,
-                        MyAlertDialogFragment.MESSAGE_TYPE.ALERT_INFO,
+                        MyAlertDialog.MESSAGE_TYPE.ALERT_INFO,
                         null,
                         null
                     )

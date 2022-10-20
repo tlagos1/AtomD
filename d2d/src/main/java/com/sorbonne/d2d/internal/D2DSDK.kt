@@ -121,7 +121,7 @@ class D2DSDK {
 
         override fun onDisconnected(endPointId: String) {
             viewModel.disconnectedDevices.value =
-                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": ${connectedDevices.getDeviceParameters(endPointId)}}")
+                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointParameters\": ${connectedDevices.getDeviceParameters(endPointId)}}")
             connectedDevices.removeDevice(endPointId)
 
             Log.i(TAG, "disconnected from  $endPointId")
@@ -249,7 +249,7 @@ class D2DSDK {
         connectionClient?.let {
             it.disconnectFromEndpoint(endPointId)
             viewModel.disconnectedDevices.value =
-                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"${connectedDevices.getDeviceParameters(endPointId)}\"}")
+                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointParameters\": \"${connectedDevices.getDeviceParameters(endPointId)}\"}")
             connectedDevices.removeDevice(endPointId)
 
             Log.i(TAG, "disconnected from  $endPointId")

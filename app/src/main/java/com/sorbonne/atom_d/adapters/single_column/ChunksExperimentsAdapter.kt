@@ -8,6 +8,7 @@ import com.sorbonne.atom_d.view_holders.SingleColumnType
 import com.sorbonne.atom_d.view_holders.SingleColumnViewHolder
 
 class ChunksExperimentsAdapter: ListAdapter<ChunkExperiments, SingleColumnViewHolder> (Comparator()){
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SingleColumnViewHolder {
         return try {
             SingleColumnViewHolder.create(parent, SingleColumnType.TextView)
