@@ -1,6 +1,7 @@
 package com.sorbonne.atom_d
 
 import android.annotation.SuppressLint
+import android.location.Location
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
@@ -19,6 +20,7 @@ import com.sorbonne.atom_d.ui.dashboard.DashboardFragment
 import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import org.json.JSONObject
 
 
 class MainActivity : AppCompatActivity(), D2DListener {
@@ -102,6 +104,61 @@ class MainActivity : AppCompatActivity(), D2DListener {
         navHostFragment.childFragmentManager.fragments.forEach{
             try {
                 (it as? DashboardFragment)?.onDiscoveryChange(active)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onDeviceConnected(isActive: Boolean, endPointInfo: JSONObject) {
+        super.onDeviceConnected(isActive, endPointInfo)
+        navHostFragment.childFragmentManager.fragments.forEach{
+            try {
+                (it as? DashboardFragment)?.onDeviceConnected(isActive, endPointInfo)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onExperimentProgress(isExperimentBar: Boolean, progression: Int) {
+        super.onExperimentProgress(isExperimentBar, progression)
+        navHostFragment.childFragmentManager.fragments.forEach{
+            try {
+                (it as? DashboardFragment)?.onExperimentProgress(isExperimentBar, progression)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onInfoPacketReceived(payload: String) {
+        super.onInfoPacketReceived(payload)
+        navHostFragment.childFragmentManager.fragments.forEach{
+            try {
+                (it as? DashboardFragment)?.onInfoPacketReceived(payload)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onReceivedTaskResul(from: D2D.ParameterTag, value: JSONObject) {
+        super.onReceivedTaskResul(from, value)
+        navHostFragment.childFragmentManager.fragments.forEach{
+            try {
+                (it as? DashboardFragment)?.onReceivedTaskResul(from, value)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onLastLocation(location: Location) {
+        super.onLastLocation(location)
+        navHostFragment.childFragmentManager.fragments.forEach{
+            try {
+                (it as? DashboardFragment)?.onLastLocation(location)
             } catch (e: Exception){
                 e.printStackTrace()
             }
