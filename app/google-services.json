@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "242014673016",
+    "project_id": "atomd-fb7fe",
+    "storage_bucket": "atomd-fb7fe.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:242014673016:android:4ebb428015c70c0556758d",
+        "android_client_info": {
+          "package_name": "com.sorbonne.atom_d"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "242014673016-htaq73e8vkqtbscogiut2k77ujn40dhe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxiKDLgPtqab4BK8WICiwq_Cb6ZeZuOMA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "242014673016-htaq73e8vkqtbscogiut2k77ujn40dhe.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
