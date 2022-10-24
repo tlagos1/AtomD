@@ -1,21 +1,21 @@
 package com.sorbonne.d2d
 
+import android.app.Activity
 import android.content.Context
-import android.util.Log
+import androidx.annotation.RequiresPermission
 import androidx.lifecycle.LifecycleOwner
 import com.google.android.gms.nearby.connection.Payload
 import com.sorbonne.d2d.internal.D2DSDK
 import com.google.android.gms.nearby.connection.Strategy
+import org.json.JSONObject
+import java.util.Objects
 
 object D2D {
     private var sdk: D2DSDK ?= null
     private val instance = this
 
     enum class ParameterTag{
-        INIT_DISCOVERY,
-        END_DISCOVERY,
-        INIT_CONNECTIVITY,
-        END_CONNECTIVITY
+        DISCOVERY
     }
 
     class Builder(private val owner: LifecycleOwner, val deviceName: String, val context: Context){
@@ -42,6 +42,10 @@ object D2D {
         instance.sdk?.startAdvertising(deviceName, strategy, lowPower, connectionType)
     }
 
+    fun notifyToConnectedDevice(endPointId: String, notificationParameters: JSONObject, afterCompleteTask:()->Unit? ){
+        instance.sdk?.notifyToConnectedDevice(endPointId, notificationParameters, afterCompleteTask)
+    }
+
     fun isConnected(): Boolean {
         instance.sdk?.let {
             return it.isConnected()
@@ -60,6 +64,10 @@ object D2D {
         instance.sdk?.stopDiscoveringOrAdvertising()
     }
 
+    fun disconnectFromDevice(endPointId: String){
+        instance.sdk?.disconnectFromDevice(endPointId)
+    }
+
     fun stopAll(){
         instance.sdk?.stopAll()
     }
@@ -76,12 +84,19 @@ object D2D {
 
     }
 
-    fun performDiscoverAttempts(){
-
+    fun performDiscoverAttempts(targetDevice: String, repetitions: Int, isLowPower: Boolean){
+        instance.sdk?.performDiscoverAttempts(targetDevice, repetitions, isLowPower)
     }
 
     fun getRequiredPermissions(): List<String>? {
         return instance.sdk?.permissions
     }
 
+    fun enableLocationUpdate(activity : Activity){
+        instance.sdk?.enableLocationUpdate(activity)
+    }
+
+    fun disableLocationUpdate(){
+         instance.sdk?.disableLocationUpdate()
+    }
 }

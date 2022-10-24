@@ -76,5 +76,4 @@ class ExperimentFragment : Fragment() {
             findNavController(view).navigate(action)
         }
     }
-
 }

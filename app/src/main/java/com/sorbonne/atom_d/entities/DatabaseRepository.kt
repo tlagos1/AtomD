@@ -7,6 +7,8 @@ import com.sorbonne.atom_d.entities.chunk_experiments.ChunkExperimentsDao
 import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttempts
 import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttemptsDao
 import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
+import com.sorbonne.atom_d.entities.data_connection_attempts.DataConnectionAttempts
+import com.sorbonne.atom_d.entities.data_connection_attempts.DataConnectionAttemptsDao
 import com.sorbonne.atom_d.entities.file_experiments.FileExperiments
 import com.sorbonne.atom_d.entities.file_experiments.FileExperimentsDao
 
@@ -17,6 +19,8 @@ class DatabaseRepository(application: Application){
     private var connectionAttemptsDao: ConnectionAttemptsDao
     private var customQueriesDao: CustomQueriesDao
 
+    private var dataConnectionAttemptsDao: DataConnectionAttemptsDao
+
     init {
         val db = RoomDatabase.getDatabase(application)
 
@@ -24,6 +28,8 @@ class DatabaseRepository(application: Application){
         fileExperimentsDao = db.FileExperimentsDao()
         connectionAttemptsDao = db.connectionAttemptsDao()
         customQueriesDao = db.customQueriesDao()
+
+        dataConnectionAttemptsDao = db.dataConnectionAttemptsDao()
     }
 
     /*
@@ -94,4 +100,13 @@ class DatabaseRepository(application: Application){
         return customQueriesDao.getAllExperimentsName()
     }
 
+    /*
+     * =========================================================================
+     * dataConnectionAttempts
+     * =========================================================================
+     */
+
+    suspend fun insertDataConnectionAttempts(dataConnectionAttempts: DataConnectionAttempts){
+        dataConnectionAttemptsDao.insert(dataConnectionAttempts)
+    }
 }

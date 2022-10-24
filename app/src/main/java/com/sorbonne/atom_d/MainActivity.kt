@@ -1,9 +1,7 @@
 package com.sorbonne.atom_d
 
 import android.annotation.SuppressLint
-import android.content.ComponentName
-import android.content.Intent
-import android.content.ServiceConnection
+import android.location.Location
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
@@ -124,11 +122,11 @@ class MainActivity : AppCompatActivity(), D2DListener {
         }
     }
 
-
     override fun onDeviceConnected(isActive: Boolean, endPointInfo: JSONObject) {
         super.onDeviceConnected(isActive, endPointInfo)
-        navHostFragment?.childFragmentManager?.fragments?.forEach{
+        navHostFragment.childFragmentManager.fragments.forEach{
             try {
+                (it as? DashboardFragment)?.onDeviceConnected(isActive, endPointInfo)
                 (it as? RelaySelectionFragment)?.onDeviceConnected(isActive, endPointInfo)
             } catch (e: Exception){
                 e.printStackTrace()
@@ -136,11 +134,55 @@ class MainActivity : AppCompatActivity(), D2DListener {
         }
     }
 
-    override fun onReceivedChunk(payload: Payload) {
+	override fun onReceivedChunk(payload: Payload) {
         super.onReceivedChunk(payload)
         navHostFragment?.childFragmentManager?.fragments?.forEach{
             try {
                 (it as? RelaySelectionFragment)?.onReceivedChunk(payload)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    override fun onExperimentProgress(isExperimentBar: Boolean, progression: Int) {
+        super.onExperimentProgress(isExperimentBar, progression)
+        navHostFragment.childFragmentManager.fragments.forEach{
+            try {
+                (it as? DashboardFragment)?.onExperimentProgress(isExperimentBar, progression)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onInfoPacketReceived(payload: String) {
+        super.onInfoPacketReceived(payload)
+        navHostFragment.childFragmentManager.fragments.forEach{
+            try {
+                (it as? DashboardFragment)?.onInfoPacketReceived(payload)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onReceivedTaskResul(from: D2D.ParameterTag, value: JSONObject) {
+        super.onReceivedTaskResul(from, value)
+        navHostFragment.childFragmentManager.fragments.forEach{
+            try {
+                (it as? DashboardFragment)?.onReceivedTaskResul(from, value)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onLastLocation(location: Location) {
+        super.onLastLocation(location)
+        navHostFragment.childFragmentManager.fragments.forEach{
+            try {
+                (it as? DashboardFragment)?.onLastLocation(location)
             } catch (e: Exception){
                 e.printStackTrace()
             }

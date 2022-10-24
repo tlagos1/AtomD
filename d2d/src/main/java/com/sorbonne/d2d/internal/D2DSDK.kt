@@ -1,20 +1,29 @@
 package com.sorbonne.d2d.internal
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
-import android.hardware.usb.UsbEndpoint
+import android.location.Location
 import android.os.Build
+import android.os.Looper
 import android.util.Log
+import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.sorbonne.d2d.D2DListener
 import com.sorbonne.d2d.tools.ConnectedDevices
 import com.google.android.gms.common.api.CommonStatusCodes
+import com.google.android.gms.location.*
 import com.google.android.gms.nearby.Nearby
 import com.google.android.gms.nearby.connection.*
 import com.sorbonne.d2d.D2D
+import com.sorbonne.d2d.tools.MessageBytes
 import org.json.JSONObject
+import java.nio.charset.StandardCharsets
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 class D2DSDK {
     private val TAG = D2DSDK::class.simpleName
@@ -28,6 +37,18 @@ class D2DSDK {
     private val connectedDevices = ConnectedDevices()
 
     private var isDiscoveringAdvertising = false
+
+    private var fusedLocationProviderClient: FusedLocationProviderClient?= null
+
+    private var targetDevice:String ?= null
+    private var totalNumberOfTask: Int = 0
+    // Discovery_experiment
+    private var isDiscoveryExperiment = false
+    private var discoveryRepetitions = 0
+    private var islowPower = false
+
+
+
 
     val permissions: List<String> by lazy {
         buildList {
@@ -54,20 +75,27 @@ class D2DSDK {
     }.contains(PackageManager.PERMISSION_DENIED)
 
     private val payloadCallback = object: PayloadCallback(){
-
         private var payloadById = mutableMapOf<Long, Payload>()
 
         override fun onPayloadReceived(endPointId: String, payload: Payload) {
+            Log.i(TAG,"onPayloadReceived")
             payloadById[payload.id] = payload
         }
 
         override fun onPayloadTransferUpdate(endPointId: String, payloadTransferUpdate: PayloadTransferUpdate) {
             when(payloadTransferUpdate.status){
-                PayloadTransferUpdate.Status.SUCCESS -> {
+                PayloadTransferUpdate.Status.SUCCESS ->{
                     val receivedPayload = payloadById.remove(payloadTransferUpdate.payloadId)
                     when(receivedPayload?.type){
                         Payload.Type.BYTES -> {
-                            viewModel.receivedChunk.value = receivedPayload
+                        	viewModel.receivedChunk.value = receivedPayload
+                            val messageBytes = MessageBytes(receivedPayload.asBytes())
+                            if(messageBytes.type == MessageBytes.INFO_PACKET){
+                                viewModel.infoPacket.value = String(messageBytes.payload, StandardCharsets.UTF_8)
+                            }
+                        }
+                        Payload.Type.FILE -> {
+
                         }
                     }
                 }
@@ -78,13 +106,47 @@ class D2DSDK {
     private val endpointDiscoveryCallback = object : EndpointDiscoveryCallback(){
         override fun onEndpointFound(endPointId: String, discoveredEndpointInfo: DiscoveredEndpointInfo) {
             Log.i(TAG, "endPoint $endPointId - ${discoveredEndpointInfo.endpointName} discovered")
-            connectionClient?.requestConnection(
-                deviceName,
-                endPointId,
-                connectionLifecycleCallback)
-            viewModel.foundDevice.value = JSONObject()
-                .put("endPointId", endPointId)
-                .put("endPointName", discoveredEndpointInfo.endpointName)
+            if(targetDevice != null){
+                if(isDiscoveryExperiment){
+                    val stateTiming = System.currentTimeMillis()
+                    viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                        totalNumberOfTask,
+                        islowPower,
+                        discoveryRepetitions,
+                        "onEndpointFound",
+                        stateTiming
+                    )
+                }
+                if(discoveredEndpointInfo.endpointName == targetDevice){
+                    connectionClient?.requestConnection(
+                        deviceName,
+                        endPointId,
+                        connectionLifecycleCallback
+                    )?.let {
+                        it.addOnSuccessListener {
+                            if(isDiscoveryExperiment){
+                                val stateTiming = System.currentTimeMillis()
+                                viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                                    totalNumberOfTask,
+                                    islowPower,
+                                    discoveryRepetitions,
+                                    "requestConnection",
+                                    stateTiming
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                connectionClient?.requestConnection(
+                    deviceName,
+                    endPointId,
+                    connectionLifecycleCallback
+                )
+                viewModel.foundDevice.value = JSONObject()
+                    .put("endPointId", endPointId)
+                    .put("endPointName", discoveredEndpointInfo.endpointName)
+            }
         }
 
         override fun onEndpointLost(endPointId: String) {
@@ -99,20 +161,69 @@ class D2DSDK {
         private var endDeviceName = ""
 
         override fun onConnectionInitiated(endPointId: String, connectionInfo: ConnectionInfo) {
-            Log.i(TAG, "onConnectionInitiated from $endPointId")
-            connectionClient?.acceptConnection(endPointId, payloadCallback)
+            if(isDiscoveryExperiment){
+                val stateTiming = System.currentTimeMillis()
+                viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                    totalNumberOfTask,
+                    islowPower,
+                    discoveryRepetitions,
+                    "onConnectionInitiated",
+                    stateTiming
+                )
+            }
+            connectionClient?.acceptConnection(endPointId, payloadCallback)?.let {
+                it.addOnSuccessListener {
+                    if(isDiscoveryExperiment){
+                        val stateTiming = System.currentTimeMillis()
+                        viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                            totalNumberOfTask,
+                            islowPower,
+                            discoveryRepetitions,
+                            "acceptConnection",
+                            stateTiming
+                        )
+                    }
+                }
+            }
             endDeviceName = connectionInfo.endpointName
         }
 
         override fun onConnectionResult(endPointId: String, connectionResolution: ConnectionResolution) {
             when(connectionResolution.status.statusCode){
                 CommonStatusCodes.SUCCESS -> {
-                    Log.i(TAG, "connected with  $endPointId - $endDeviceName")
                     viewModel.isConnected.value = true
-                    viewModel.connectedDevices.value =
-                        JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$endDeviceName\"}")
-                    connectedDevices.addNewDevice(endPointId, endDeviceName)
-
+                    if(discoveryRepetitions > 0){
+                        if(isDiscoveryExperiment){
+                            val stateTiming = System.currentTimeMillis()
+                            viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                                totalNumberOfTask,
+                                islowPower,
+                                discoveryRepetitions,
+                                "onConnectionResult",
+                                stateTiming
+                            )
+                        }
+                        discoveryRepetitions -= 1
+                        viewModel.experimentProgress.value = (((totalNumberOfTask-discoveryRepetitions).toDouble()/totalNumberOfTask)*100).toInt()
+                        if(discoveryRepetitions == 0){
+                            targetDevice = null
+                            viewModel.connectedDevices.value =
+                                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$endDeviceName\"}")
+                            viewModel.infoPacket.value = notificationParametersForCompletedExperiment("discovery").toString()
+                        }
+                        else{
+                            stopDiscoveringOrAdvertising()
+                            disconnectFromDevice(endPointId)
+                            Log.e(TAG, "discoveryRepetitions: $discoveryRepetitions")
+                            startDiscovery(Strategy.P2P_POINT_TO_POINT, false)
+                        }
+                    }
+                    if(discoveryRepetitions == 0){
+                        Log.i(TAG, "connected with  $endPointId - $endDeviceName")
+                        viewModel.connectedDevices.value =
+                            JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$endDeviceName\"}")
+                        connectedDevices.addNewDevice(endPointId, endDeviceName)
+                    }
                 }
                 ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED -> {
                 }
@@ -159,6 +270,21 @@ class D2DSDK {
         viewModel.receivedChunk.observe(owner){ payload ->
             listener?.onReceivedChunk(payload)
         }
+        viewModel.experimentProgress.observe(owner){ experimentProgress ->
+            listener?.onExperimentProgress(true, experimentProgress)
+        }
+        viewModel.taskProgress.observe(owner){ taskProgress ->
+            listener?.onExperimentProgress(false, taskProgress)
+        }
+        viewModel.discoveryTaskValue.observe(owner){ taskValue ->
+            listener?.onReceivedTaskResul(D2D.ParameterTag.DISCOVERY, taskValue)
+        }
+        viewModel.infoPacket.observe(owner){ infoPacket ->
+            listener?.onInfoPacketReceived(infoPacket)
+        }
+        viewModel.lastLocation.observe(owner){ lastLocation ->
+            listener?.onLastLocation(lastLocation)
+        }
     }
 
     fun startDiscovery(strategy: Strategy, lowPower: Boolean){
@@ -177,7 +303,17 @@ class D2DSDK {
                     endpointDiscoveryCallback,
                     discoveryOption
                 ).addOnSuccessListener {
-                    Log.i(TAG, "Device Discovering")
+                    if(isDiscoveryExperiment){
+                        val stateTiming = System.currentTimeMillis()
+                        islowPower = lowPower
+                        viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                            totalNumberOfTask,
+                            islowPower,
+                            discoveryRepetitions,
+                            "startDiscovery",
+                            stateTiming
+                        )
+                    }
                     viewModel.isDiscoveryActive.value = true
                     isDiscoveringAdvertising = true
                     Log.i(TAG, "Discoverer successfully started")
@@ -225,6 +361,25 @@ class D2DSDK {
         }
     }
 
+    fun notifyToConnectedDevice(endPointId: String, notificationParameters: JSONObject, afterCompleteTask:()->Unit?){
+        val messageBytes = MessageBytes()
+
+        messageBytes.buildRegularPacket(
+            MessageBytes.INFO_PACKET,
+            notificationParameters.toString().toByteArray(StandardCharsets.UTF_8)
+        )
+
+        connectionClient?.sendPayload(endPointId, Payload.fromBytes(messageBytes.buffer))?.let { it ->
+            it.addOnSuccessListener {
+                Log.i(TAG, "message successfully sent to $endPointId")
+            }.addOnFailureListener { e ->
+                e.printStackTrace()
+            }.addOnCompleteListener {
+                afterCompleteTask()
+            }
+        }
+    }
+
     fun isConnected(): Boolean{
         return !connectedDevices.isEmpty()
     }
@@ -241,16 +396,27 @@ class D2DSDK {
 
     }
 
-    fun performDiscoverAttempts(){
-
+    fun performDiscoverAttempts(targetDevice: String,repetitions: Int, lowPower: Boolean){
+        this.isDiscoveryExperiment = true
+        this.targetDevice = targetDevice
+        this.totalNumberOfTask = repetitions
+        this.discoveryRepetitions = repetitions
+        connectedDevices.getEndPointIds().forEach{ endPointId ->
+            connectionClient?.disconnectFromEndpoint(endPointId)
+        }
+        connectedDevices.clear()
+        startDiscovery(Strategy.P2P_POINT_TO_POINT, lowPower)
     }
 
     fun disconnectFromDevice(endPointId: String){
         connectionClient?.let {
             it.disconnectFromEndpoint(endPointId)
             viewModel.disconnectedDevices.value =
-                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointParameters\": \"${connectedDevices.getDeviceParameters(endPointId)}\"}")
-            connectedDevices.removeDevice(endPointId)
+                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointParameters\": ${connectedDevices.getDeviceParameters(endPointId)}}")
+
+            if(!connectedDevices.isEmpty()){
+                connectedDevices.removeDevice(endPointId)
+            }
 
             Log.i(TAG, "disconnected from  $endPointId")
 
@@ -278,7 +444,7 @@ class D2DSDK {
             Log.i(TAG, "stopAllEndpoints")
             viewModel.isDiscoveryActive.value = false
             viewModel.isConnected.value = false
-
+            isDiscoveryExperiment = false
             connectedDevices.getEndPointIds().forEach{ endPointId ->
                 viewModel.disconnectedDevices.value =  JSONObject("{\"endPointId\": \"$endPointId\", \"endPointParameters\": ${connectedDevices.getDeviceParameters(endPointId)}}")
                 Log.i(TAG, "disconnected from  $endPointId")
@@ -289,5 +455,70 @@ class D2DSDK {
 
     fun setDeviceName(deviceName: String){
         this.deviceName = deviceName
+    }
+
+    private val locationCallback: LocationCallback = object: LocationCallback(){
+        override fun onLocationResult(locationResult: LocationResult) {
+            super.onLocationResult(locationResult)
+            viewModel.lastLocation.value = locationResult.lastLocation
+            Log.i(TAG, "lastLocation: ${locationResult.lastLocation}")
+        }
+
+        override fun onLocationAvailability(locationAvailability: LocationAvailability) {
+            super.onLocationAvailability(locationAvailability)
+            if(locationAvailability.isLocationAvailable){
+                Log.i(TAG, "location is available")
+            } else {
+                Log.i(TAG, "location is not available")
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun enableLocationUpdate(activity :Activity){
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(activity)
+        fusedLocationProviderClient?.lastLocation?.addOnSuccessListener { location ->
+                location?.let {
+                    viewModel.lastLocation.value = location
+                    Log.i(TAG, "lastLocation: $location")
+                }
+            }
+        fusedLocationProviderClient?.requestLocationUpdates(
+            createLocationRequest(Priority.PRIORITY_HIGH_ACCURACY, 60),
+            locationCallback,
+            Looper.myLooper()
+        )
+    }
+
+    fun disableLocationUpdate(){
+        fusedLocationProviderClient?.removeLocationUpdates(locationCallback)
+        fusedLocationProviderClient = null
+    }
+    private fun createLocationRequest(priority: Int, interval: Int): LocationRequest {
+        val locationRequest = LocationRequest.Builder(
+            priority,
+            interval.toDuration(DurationUnit.SECONDS).inWholeMilliseconds
+        )
+        .build()
+
+        return locationRequest
+    }
+
+    private fun notificationParametersForCompletedExperiment(experiment: String): JSONObject{
+        val notificationParameters = JSONObject()
+        notificationParameters.put("experimentType", experiment)
+        notificationParameters.put("experimentMessageType", "finished")
+        notificationParameters.put("target", "local")
+        return notificationParameters
+    }
+
+    private fun discoveryTaskValue(mTotalNumberOfAttempts: Int, mIsLowPower: Boolean, mAttempt: Int, mState: String, mStateTiming: Long): JSONObject {
+        val taskValue = JSONObject()
+        taskValue.put("totalNumberOfAttempts", mTotalNumberOfAttempts)
+        taskValue.put("isLowPower", mIsLowPower)
+        taskValue.put("attempt", mAttempt)
+        taskValue.put("state", mState)
+        taskValue.put("stateTiming", mStateTiming)
+        return taskValue
     }
 }
