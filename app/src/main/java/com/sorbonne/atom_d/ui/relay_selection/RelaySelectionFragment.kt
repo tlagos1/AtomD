@@ -21,10 +21,7 @@ import com.sorbonne.atom_d.adapters.single_column.SimpleSingleColumnAdapter
 import com.sorbonne.atom_d.guard
 import com.sorbonne.atom_d.services.Socket
 import com.sorbonne.atom_d.services.socket.SocketListener
-import com.sorbonne.atom_d.tools.CustomRecyclerView
-import com.sorbonne.atom_d.tools.JsonServerMessage
-import com.sorbonne.atom_d.tools.MessageBytes
-import com.sorbonne.atom_d.tools.MyAlertDialog
+import com.sorbonne.atom_d.tools.*
 import com.sorbonne.atom_d.view_holders.SingleColumnViewHolder
 import com.sorbonne.d2d.D2DListener
 import org.json.JSONObject
@@ -118,7 +115,7 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
 
                     viewModel.instance?.startAdvertising(
                         viewModel.deviceId!!,
-                        Strategy.P2P_POINT_TO_POINT,
+                        Strategy.P2P_CLUSTER,
                         false,
                         ConnectionType.NON_DISRUPTIVE
                     )
@@ -174,18 +171,16 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                             null
                         )
                     } else {
-                        val d2dMessage = MessageBytes()
-                        val serverMessage = message.toString()
-
-                        d2dMessage.buildRegularPacket(
-                            MessageBytes.INFO_PACKET,
-                            serverMessage.toByteArray(StandardCharsets.UTF_8)
-                        )
-
-                        viewModel.instance?.sendPayloadByDeviceId(
-                            displayMessageParameters.getString("target"),
-                            Payload.fromBytes(d2dMessage.buffer)
-                        )
+                        relaySelectionPlayersConnected.forEach { connectedDevice ->
+                            if (displayMessageParameters.getString("target") == connectedDevice.getString("endPointName")){
+                                viewModel.instance?.notifyToConnectedDevice(
+                                    connectedDevice.getString("endPointId"),
+                                    MessageTag.SOCKET,
+                                    message
+                                ){}
+                                return
+                            }
+                        }
                     }
                 }
             }
@@ -198,8 +193,6 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
     override fun onDeviceConnected(isActive: Boolean, endPointInfo: JSONObject) {
         super.onDeviceConnected(isActive, endPointInfo)
         if(isActive){
-
-            viewModel.instance?.stopDiscoveringOrAdvertising()
 
             val parameters = JSONObject()
             parameters.put("endPointId", endPointInfo.get("endPointId"))
@@ -219,60 +212,51 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                 )
                 viewModel.socketService?.sendMessage(notifySocket.toString())
             }
-
-
-        }else{
+        } else{
             relaySelectionPlayersConnected.forEachIndexed{ index, parameters ->
                 if(parameters.get("endPointId") == endPointInfo.get("endPointId")) {
                     adapter.notifyItemRemoved(index)
                     relaySelectionPlayersConnected.removeAt(index)
-                    if(relaySelectionPlayersConnected.isEmpty()){
-                        startRelaySelection?.isEnabled = true
-                        stopRelaySelection?.isEnabled = false
-
-                        bottomNavigationView?.menu?.apply {
-                            findItem(R.id.navigation_dashboard).isEnabled = true
-                            findItem(R.id.navigation_experiment).isEnabled = true
-                        }
-
-                        for (index2 in 0 until selectedRole!!.childCount){
-                            val singleRole = selectedRole!!.getChildAt(index2) as MaterialButton
-                            singleRole.isEnabled = true
-                        }
-                        viewModel.instance?.stopAll()
-                        if(!isDiscoverer){
-                            viewModel.socketService?.disconnectSocket()
-                        }
-                    }
                     return
                 }
             }
         }
+
+        if(relaySelectionPlayersConnected.size >= 2 && viewModel.instance?.isDiscovering() == true){
+            viewModel.instance?.stopDiscoveringOrAdvertising()
+        } else {
+            if(isDiscoverer){
+                viewModel.instance?.startDiscovery(Strategy.P2P_CLUSTER, false)
+            } else{
+                viewModel.instance?.startAdvertising(
+                    viewModel.deviceId!!,
+                    Strategy.P2P_CLUSTER,
+                    false,
+                    ConnectionType.NON_DISRUPTIVE
+                )
+            }
+        }
     }
 
-    override fun onReceivedChunk(payload: Payload) {
-        super.onReceivedChunk(payload)
+    override fun onInfoPacketReceived(messageTag: Byte, payload: String) {
+        super.onInfoPacketReceived(messageTag, payload)
 
-        val receivedPayload = MessageBytes(payload.asBytes())
-
-        if(receivedPayload.type == MessageBytes.INFO_PACKET){
-            val jsonMessage = JSONObject(String(receivedPayload.payload,StandardCharsets.UTF_8))
-            Log.e(TAG, jsonMessage.toString())
-            if(jsonMessage.getInt("command") == Socket.JsonCommands.SERVER_MESSAGE.ordinal){
-                if(jsonMessage.getString("value") == "display_message"){
-                    val messageParameters = JSONObject(jsonMessage.getString("parameters"))
-                    MyAlertDialog.showDialog(
-                        parentFragmentManager,
-                        TAG,
-                        "Alert",
-                        messageParameters.getString("message"),
-                        R.drawable.ic_alert_dialog_info_24,
-                        false,
-                        MyAlertDialog.MESSAGE_TYPE.ALERT_INFO,
-                        null,
-                        null
-                    )
-                }
+        val jsonMessage = JSONObject(payload)
+        Log.e(TAG, jsonMessage.toString())
+        if(jsonMessage.getInt("command") == Socket.JsonCommands.SERVER_MESSAGE.ordinal){
+            if(jsonMessage.getString("value") == "display_message"){
+                val messageParameters = JSONObject(jsonMessage.getString("parameters"))
+                MyAlertDialog.showDialog(
+                    parentFragmentManager,
+                    TAG,
+                    "Alert",
+                    messageParameters.getString("message"),
+                    R.drawable.ic_alert_dialog_info_24,
+                    false,
+                    MyAlertDialog.MESSAGE_TYPE.ALERT_INFO,
+                    null,
+                    null
+                )
             }
         }
     }

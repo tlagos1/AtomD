@@ -42,8 +42,8 @@ object D2D {
         instance.sdk?.startAdvertising(deviceName, strategy, lowPower, connectionType)
     }
 
-    fun notifyToConnectedDevice(endPointId: String, notificationParameters: JSONObject, afterCompleteTask:()->Unit? ){
-        instance.sdk?.notifyToConnectedDevice(endPointId, notificationParameters, afterCompleteTask)
+    fun notifyToConnectedDevice(endPointId: String, tag: Byte, notificationParameters: JSONObject, afterCompleteTask:()->Unit? ){
+        instance.sdk?.notifyToConnectedDevice(endPointId, tag, notificationParameters, afterCompleteTask)
     }
 
     fun isConnected(): Boolean {
@@ -72,9 +72,6 @@ object D2D {
         instance.sdk?.stopAll()
     }
 
-    fun sendPayloadByDeviceId(endPoint: String, payload: Payload){
-        instance.sdk?.sendPayloadByDeviceId(endPoint, payload)
-    }
 
     fun sendSetOfChunks(){
 

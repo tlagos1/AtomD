@@ -88,10 +88,11 @@ class D2DSDK {
                     val receivedPayload = payloadById.remove(payloadTransferUpdate.payloadId)
                     when(receivedPayload?.type){
                         Payload.Type.BYTES -> {
-                        	viewModel.receivedChunk.value = receivedPayload
                             val messageBytes = MessageBytes(receivedPayload.asBytes())
                             if(messageBytes.type == MessageBytes.INFO_PACKET){
-                                viewModel.infoPacket.value = String(messageBytes.payload, StandardCharsets.UTF_8)
+                                val infoPacket = mutableMapOf<Byte, String>()
+                                infoPacket[messageBytes.tag] = String(messageBytes.payload, StandardCharsets.UTF_8)
+                                viewModel.infoPacket.value = infoPacket
                             }
                         }
                         Payload.Type.FILE -> {
@@ -110,11 +111,13 @@ class D2DSDK {
                 if(isDiscoveryExperiment){
                     val stateTiming = System.currentTimeMillis()
                     viewModel.discoveryTaskValue.value = discoveryTaskValue(
-                        totalNumberOfTask,
-                        islowPower,
-                        discoveryRepetitions,
-                        "onEndpointFound",
-                        stateTiming
+                        "running",
+                        JSONObject()
+                            .put("totalNumberOfAttempts", totalNumberOfTask)
+                            .put("isLowPower", islowPower)
+                            .put("attempt", discoveryRepetitions)
+                            .put("state", "onEndpointFound")
+                            .put("stateTiming", stateTiming)
                     )
                 }
                 if(discoveredEndpointInfo.endpointName == targetDevice){
@@ -127,11 +130,13 @@ class D2DSDK {
                             if(isDiscoveryExperiment){
                                 val stateTiming = System.currentTimeMillis()
                                 viewModel.discoveryTaskValue.value = discoveryTaskValue(
-                                    totalNumberOfTask,
-                                    islowPower,
-                                    discoveryRepetitions,
-                                    "requestConnection",
-                                    stateTiming
+                                    "running",
+                                    JSONObject()
+                                        .put("totalNumberOfAttempts", totalNumberOfTask)
+                                        .put("isLowPower", islowPower)
+                                        .put("attempt", discoveryRepetitions)
+                                        .put("state", "requestConnection")
+                                        .put("stateTiming", stateTiming)
                                 )
                             }
                         }
@@ -164,11 +169,13 @@ class D2DSDK {
             if(isDiscoveryExperiment){
                 val stateTiming = System.currentTimeMillis()
                 viewModel.discoveryTaskValue.value = discoveryTaskValue(
-                    totalNumberOfTask,
-                    islowPower,
-                    discoveryRepetitions,
-                    "onConnectionInitiated",
-                    stateTiming
+                    "running",
+                    JSONObject()
+                        .put("totalNumberOfAttempts", totalNumberOfTask)
+                        .put("isLowPower", islowPower)
+                        .put("attempt", discoveryRepetitions)
+                        .put("state", "onConnectionInitiated")
+                        .put("stateTiming", stateTiming)
                 )
             }
             connectionClient?.acceptConnection(endPointId, payloadCallback)?.let {
@@ -176,11 +183,13 @@ class D2DSDK {
                     if(isDiscoveryExperiment){
                         val stateTiming = System.currentTimeMillis()
                         viewModel.discoveryTaskValue.value = discoveryTaskValue(
-                            totalNumberOfTask,
-                            islowPower,
-                            discoveryRepetitions,
-                            "acceptConnection",
-                            stateTiming
+                            "running",
+                            JSONObject()
+                                .put("totalNumberOfAttempts", totalNumberOfTask)
+                                .put("isLowPower", islowPower)
+                                .put("attempt", discoveryRepetitions)
+                                .put("state", "acceptConnection")
+                                .put("stateTiming", stateTiming)
                         )
                     }
                 }
@@ -196,11 +205,13 @@ class D2DSDK {
                         if(isDiscoveryExperiment){
                             val stateTiming = System.currentTimeMillis()
                             viewModel.discoveryTaskValue.value = discoveryTaskValue(
-                                totalNumberOfTask,
-                                islowPower,
-                                discoveryRepetitions,
-                                "onConnectionResult",
-                                stateTiming
+                                "running",
+                                JSONObject()
+                                    .put("totalNumberOfAttempts", totalNumberOfTask)
+                                    .put("isLowPower", islowPower)
+                                    .put("attempt", discoveryRepetitions)
+                                    .put("state", "onConnectionResult")
+                                    .put("stateTiming", stateTiming)
                             )
                         }
                         discoveryRepetitions -= 1
@@ -209,7 +220,10 @@ class D2DSDK {
                             targetDevice = null
                             viewModel.connectedDevices.value =
                                 JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$endDeviceName\"}")
-                            viewModel.infoPacket.value = notificationParametersForCompletedExperiment("discovery").toString()
+                            viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                                "finished",
+                                notificationParametersForCompletedExperiment("discovery")
+                            )
                         }
                         else{
                             stopDiscoveringOrAdvertising()
@@ -267,9 +281,6 @@ class D2DSDK {
         viewModel.disconnectedDevices.observe(owner){ endPointInfo ->
             listener?.onDeviceConnected(false, endPointInfo)
         }
-        viewModel.receivedChunk.observe(owner){ payload ->
-            listener?.onReceivedChunk(payload)
-        }
         viewModel.experimentProgress.observe(owner){ experimentProgress ->
             listener?.onExperimentProgress(true, experimentProgress)
         }
@@ -280,7 +291,9 @@ class D2DSDK {
             listener?.onReceivedTaskResul(D2D.ParameterTag.DISCOVERY, taskValue)
         }
         viewModel.infoPacket.observe(owner){ infoPacket ->
-            listener?.onInfoPacketReceived(infoPacket)
+            infoPacket.entries.forEach{ (entryKey, entryValue) ->
+                listener?.onInfoPacketReceived(entryKey, entryValue)
+            }
         }
         viewModel.lastLocation.observe(owner){ lastLocation ->
             listener?.onLastLocation(lastLocation)
@@ -306,12 +319,15 @@ class D2DSDK {
                     if(isDiscoveryExperiment){
                         val stateTiming = System.currentTimeMillis()
                         islowPower = lowPower
+
                         viewModel.discoveryTaskValue.value = discoveryTaskValue(
-                            totalNumberOfTask,
-                            islowPower,
-                            discoveryRepetitions,
-                            "startDiscovery",
-                            stateTiming
+                            "running",
+                            JSONObject()
+                                .put("totalNumberOfAttempts", totalNumberOfTask)
+                                .put("isLowPower", islowPower)
+                                .put("attempt", discoveryRepetitions)
+                                .put("state", "startDiscovery")
+                                .put("stateTiming", stateTiming)
                         )
                     }
                     viewModel.isDiscoveryActive.value = true
@@ -355,17 +371,12 @@ class D2DSDK {
         }
     }
 
-    fun sendPayloadByDeviceId(endPoint: String, payload: Payload){
-        connectedDevices.getDeviceIdByDeviceName(endPoint)?.let{ endPointId ->
-            connectionClient?.sendPayload(endPointId, payload)
-        }
-    }
-
-    fun notifyToConnectedDevice(endPointId: String, notificationParameters: JSONObject, afterCompleteTask:()->Unit?){
+    fun notifyToConnectedDevice(endPointId: String, tag: Byte, notificationParameters: JSONObject, afterCompleteTask:()->Unit?){
         val messageBytes = MessageBytes()
 
         messageBytes.buildRegularPacket(
             MessageBytes.INFO_PACKET,
+            tag,
             notificationParameters.toString().toByteArray(StandardCharsets.UTF_8)
         )
 
@@ -453,6 +464,7 @@ class D2DSDK {
         }
     }
 
+
     fun setDeviceName(deviceName: String){
         this.deviceName = deviceName
     }
@@ -512,13 +524,9 @@ class D2DSDK {
         return notificationParameters
     }
 
-    private fun discoveryTaskValue(mTotalNumberOfAttempts: Int, mIsLowPower: Boolean, mAttempt: Int, mState: String, mStateTiming: Long): JSONObject {
-        val taskValue = JSONObject()
-        taskValue.put("totalNumberOfAttempts", mTotalNumberOfAttempts)
-        taskValue.put("isLowPower", mIsLowPower)
-        taskValue.put("attempt", mAttempt)
-        taskValue.put("state", mState)
-        taskValue.put("stateTiming", mStateTiming)
-        return taskValue
+    private fun discoveryTaskValue(experimentState: String, experimentValueParameters: JSONObject): JSONObject {
+        return JSONObject()
+            .put("experimentState", experimentState)
+            .put("experimentValueParameters", experimentValueParameters)
     }
 }

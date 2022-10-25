@@ -29,6 +29,10 @@ class ConnectedDevices {
         return connectedDevices.values
     }
 
+    fun getDeviceEntries(): MutableSet<MutableMap.MutableEntry<String, JSONObject>> {
+        return connectedDevices.entries
+    }
+
     fun getEndPointIds(): MutableSet<String> {
         return connectedDevices.keys
     }

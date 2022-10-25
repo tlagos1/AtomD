@@ -1,6 +1,9 @@
 package com.sorbonne.atom_d
 
 import android.annotation.SuppressLint
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
 import android.location.Location
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -23,6 +26,7 @@ import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.sorbonne.atom_d.services.Socket
+import com.sorbonne.atom_d.tools.MessageTag
 import com.sorbonne.atom_d.ui.relay_selection.RelaySelectionFragment
 import org.json.JSONObject
 
@@ -133,17 +137,6 @@ class MainActivity : AppCompatActivity(), D2DListener {
             }
         }
     }
-
-	override fun onReceivedChunk(payload: Payload) {
-        super.onReceivedChunk(payload)
-        navHostFragment?.childFragmentManager?.fragments?.forEach{
-            try {
-                (it as? RelaySelectionFragment)?.onReceivedChunk(payload)
-            } catch (e: Exception){
-                e.printStackTrace()
-            }
-        }
-    }
     
     override fun onExperimentProgress(isExperimentBar: Boolean, progression: Int) {
         super.onExperimentProgress(isExperimentBar, progression)
@@ -156,11 +149,16 @@ class MainActivity : AppCompatActivity(), D2DListener {
         }
     }
 
-    override fun onInfoPacketReceived(payload: String) {
-        super.onInfoPacketReceived(payload)
+    override fun onInfoPacketReceived(messageTag: Byte, payload: String) {
+        super.onInfoPacketReceived(messageTag, payload)
         navHostFragment.childFragmentManager.fragments.forEach{
             try {
-                (it as? DashboardFragment)?.onInfoPacketReceived(payload)
+                if(messageTag == MessageTag.D2D_PERFORMANCE){
+                    (it as? DashboardFragment)?.onInfoPacketReceived(messageTag, payload)
+                }
+                if (messageTag == MessageTag.SOCKET){
+                    (it as? RelaySelectionFragment)?.onInfoPacketReceived(messageTag, payload)
+                }
             } catch (e: Exception){
                 e.printStackTrace()
             }

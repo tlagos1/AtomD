@@ -10,10 +10,8 @@ interface D2DListener {
     fun onConnectivityChange(active: Boolean){}
     fun onEndPointsDiscovered(isActive: Boolean, endPointInfo: JSONObject){}
     fun onDeviceConnected(isActive: Boolean, endPointInfo: JSONObject){}
-    fun onReceivedChunk(payload: Payload){}
-    fun onReceivedParameter(parameter: D2D.ParameterTag, value: JSONObject){}
     fun onExperimentProgress(isExperimentBar: Boolean, progression: Int){}
     fun onReceivedTaskResul(from: D2D.ParameterTag, value: JSONObject){}
-    fun onInfoPacketReceived(payload: String){}
+    fun onInfoPacketReceived(messageTag: Byte,payload: String){}
     fun onLastLocation(location: Location){}
 }
