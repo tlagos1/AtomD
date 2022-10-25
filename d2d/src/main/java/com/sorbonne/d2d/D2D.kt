@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.LifecycleOwner
+import com.google.android.gms.nearby.connection.Payload
 import com.sorbonne.d2d.internal.D2DSDK
 import com.google.android.gms.nearby.connection.Strategy
 import org.json.JSONObject
@@ -41,8 +42,8 @@ object D2D {
         instance.sdk?.startAdvertising(deviceName, strategy, lowPower, connectionType)
     }
 
-    fun notifyToConnectedDevice(endPointId: String, notificationParameters: JSONObject, afterCompleteTask:()->Unit? ){
-        instance.sdk?.notifyToConnectedDevice(endPointId, notificationParameters, afterCompleteTask)
+    fun notifyToConnectedDevice(endPointId: String, tag: Byte, notificationParameters: JSONObject, afterCompleteTask:()->Unit? ){
+        instance.sdk?.notifyToConnectedDevice(endPointId, tag, notificationParameters, afterCompleteTask)
     }
 
     fun isConnected(): Boolean {
@@ -70,6 +71,7 @@ object D2D {
     fun stopAll(){
         instance.sdk?.stopAll()
     }
+
 
     fun sendSetOfChunks(){
 

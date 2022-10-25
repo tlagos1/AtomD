@@ -20,6 +20,7 @@ import com.sorbonne.atom_d.ui.dashboard.DashboardFragment
 import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.sorbonne.atom_d.tools.MessageTag
 import org.json.JSONObject
 
 
@@ -132,11 +133,13 @@ class MainActivity : AppCompatActivity(), D2DListener {
         }
     }
 
-    override fun onInfoPacketReceived(payload: String) {
-        super.onInfoPacketReceived(payload)
+    override fun onInfoPacketReceived(messageTag: Byte, payload: String) {
+        super.onInfoPacketReceived(messageTag, payload)
         navHostFragment.childFragmentManager.fragments.forEach{
             try {
-                (it as? DashboardFragment)?.onInfoPacketReceived(payload)
+                if(messageTag == MessageTag.D2D_PERFORMANCE){
+                    (it as? DashboardFragment)?.onInfoPacketReceived(messageTag, payload)
+                }
             } catch (e: Exception){
                 e.printStackTrace()
             }

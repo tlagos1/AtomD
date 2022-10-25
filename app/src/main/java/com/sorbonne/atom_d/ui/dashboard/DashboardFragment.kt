@@ -29,6 +29,7 @@ import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
 import com.sorbonne.atom_d.entities.data_connection_attempts.DataConnectionAttempts
 import com.sorbonne.atom_d.guard
 import com.sorbonne.atom_d.tools.CustomRecyclerView
+import com.sorbonne.atom_d.tools.MessageTag
 import com.sorbonne.atom_d.ui.experiment.ExperimentViewModel
 import com.sorbonne.atom_d.ui.experiment.ExperimentViewModelFactory
 import com.sorbonne.atom_d.view_holders.DoubleColumnViewHolder
@@ -170,7 +171,7 @@ class DashboardFragment : Fragment(), D2DListener {
                         )
 
                         targetEndDeviceId?.let { endPointId ->
-                            viewModel.instance?.notifyToConnectedDevice(endPointId, notificationParameters){}
+                            viewModel.instance?.notifyToConnectedDevice(endPointId, MessageTag.D2D_PERFORMANCE,notificationParameters){}
                         }
                     }
                 }
@@ -235,73 +236,72 @@ class DashboardFragment : Fragment(), D2DListener {
         }
     }
 
-    override fun onInfoPacketReceived(payload: String) {
-        super.onInfoPacketReceived(payload)
-        if(payload.isNotEmpty()) {
-            Log.i(TAG, "onInfoPacketReceived: $payload")
-            val notificationParameters: JSONObject
-            val payloadParameters = JSONObject(payload)
-            when(payloadParameters.get("experimentType")){
-                "discovery" -> {
-                    when(payloadParameters.get("experimentMessageType")){
-                        "request" ->{
-                            experimentViewModel.insertConnectionAttemptExperiment(
-                                ConnectionAttempts(
-                                    0,
-                                    payloadParameters.getString("experimentName"),
-                                    payloadParameters.getInt("discoveryAttempts"),
-                                    )
-                            )
+    override fun onInfoPacketReceived(messageTag: Byte, payload: String) {
+        super.onInfoPacketReceived(messageTag, payload)
+        Log.i(TAG, "onInfoPacketReceived: $payload")
 
-                            isExperimentRunning = true
-                            startExperiment.isEnabled = false
-
-
-                            notificationParameters = setNotificationParametersDiscovery(
-                                "replay",
+        val notificationParameters: JSONObject
+        val payloadParameters = JSONObject(payload)
+        when(payloadParameters.get("experimentType")){
+            "discovery" -> {
+                when(payloadParameters.get("experimentMessageType")){
+                    "request" ->{
+                        experimentViewModel.insertConnectionAttemptExperiment(
+                            ConnectionAttempts(
+                                0,
                                 payloadParameters.getString("experimentName"),
                                 payloadParameters.getInt("discoveryAttempts"),
-                                payloadParameters.getBoolean("asLowPower"),
-                                viewModel.deviceId!!
                             )
+                        )
 
-                            targetEndDeviceId?.let {
-                                viewModel.instance?.notifyToConnectedDevice(it, notificationParameters) {
-                                    targetEndDeviceId?.let {  endDevice ->
-                                        Thread.sleep(500L)
-                                        viewModel.instance?.disconnectFromDevice(endDevice)
-                                        viewModel.instance?.startAdvertising(
-                                            viewModel.deviceId!!,
-                                            Strategy.P2P_POINT_TO_POINT,
-                                            payloadParameters.getBoolean("asLowPower"),
-                                            ConnectionType.DISRUPTIVE
-                                        )
-                                    }
+                        isExperimentRunning = true
+                        startExperiment.isEnabled = false
+
+
+                        notificationParameters = setNotificationParametersDiscovery(
+                            "replay",
+                            payloadParameters.getString("experimentName"),
+                            payloadParameters.getInt("discoveryAttempts"),
+                            payloadParameters.getBoolean("asLowPower"),
+                            viewModel.deviceId!!
+                        )
+
+                        targetEndDeviceId?.let {
+                            viewModel.instance?.notifyToConnectedDevice(it, MessageTag.D2D_PERFORMANCE,notificationParameters) {
+                                targetEndDeviceId?.let {  endDevice ->
+                                    Thread.sleep(500L)
+                                    viewModel.instance?.disconnectFromDevice(endDevice)
+                                    viewModel.instance?.startAdvertising(
+                                        viewModel.deviceId!!,
+                                        Strategy.P2P_POINT_TO_POINT,
+                                        payloadParameters.getBoolean("asLowPower"),
+                                        ConnectionType.DISRUPTIVE
+                                    )
                                 }
                             }
                         }
+                    }
 
-                        "replay" -> {
-                            experimentId = System.currentTimeMillis()
-                            isExperimentRunning = true
-                            viewModel.instance?.performDiscoverAttempts(
-                                payloadParameters.getString("targetDevice"),
-                                payloadParameters.getInt("discoveryAttempts"),
-                                payloadParameters.getBoolean("asLowPower")
-                            )
-                        }
+                    "replay" -> {
+                        experimentId = System.currentTimeMillis()
+                        isExperimentRunning = true
+                        viewModel.instance?.performDiscoverAttempts(
+                            payloadParameters.getString("targetDevice"),
+                            payloadParameters.getInt("discoveryAttempts"),
+                            payloadParameters.getBoolean("asLowPower")
+                        )
+                    }
 
-                        "finished" ->{
-                            targetEndDeviceId?.let {
-                                if(payloadParameters.get("target") == "local"){
-                                    payloadParameters.put("target", "peer")
-                                    viewModel.instance?.notifyToConnectedDevice(it, payloadParameters){}
-                                    resetToStandbyStatus()
-                                }
-                                if(payloadParameters.get("target") == "peer"){
-                                    viewModel.instance?.stopDiscoveringOrAdvertising()
-                                    resetToStandbyStatus()
-                                }
+                    "finished" ->{
+                        targetEndDeviceId?.let {
+//                                if(payloadParameters.get("target") == "local"){
+//                                    payloadParameters.put("target", "peer")
+//                                    viewModel.instance?.notifyToConnectedDevice(it, MessageTag.D2D_PERFORMANCE, payloadParameters){}
+//                                    resetToStandbyStatus()
+//                                }
+                            if(payloadParameters.get("target") == "peer"){
+                                viewModel.instance?.stopDiscoveringOrAdvertising()
+                                resetToStandbyStatus()
                             }
                         }
                     }
@@ -315,20 +315,36 @@ class DashboardFragment : Fragment(), D2DListener {
         when(from){
             D2D.ParameterTag.DISCOVERY ->{
                 Log.i(TAG, "onReceivedTaskResul: $value")
-                viewModel.insertDataConnectionAttempts(
-                    DataConnectionAttempts(0,
-                        experimentId,
-                        viewModel.deviceId!!,
-                        targetDeviceId!!,
-                        value.getInt("totalNumberOfAttempts"),
-                        value.getBoolean("isLowPower"),
-                        value.getInt("attempt"),
-                        value.getString("state"),
-                        value.getLong("stateTiming"),
-                        latitude,
-                        longitude
+                if(value.getString("experimentState") == "running"){
+                    val experimentValueParameters = value.getJSONObject("experimentValueParameters")
+                    viewModel.insertDataConnectionAttempts(
+                        DataConnectionAttempts(0,
+                            experimentId,
+                            viewModel.deviceId!!,
+                            targetDeviceId!!,
+                            experimentValueParameters.getInt("totalNumberOfAttempts"),
+                            experimentValueParameters.getBoolean("isLowPower"),
+                            experimentValueParameters.getInt("attempt"),
+                            experimentValueParameters.getString("state"),
+                            experimentValueParameters.getLong("stateTiming"),
+                            latitude,
+                            longitude
+                        )
                     )
-                )
+                }
+                if(value.getString("experimentState") == "finished"){
+                    viewModel.instance?.stopDiscoveringOrAdvertising()
+                    val experimentValueParameters = value.getJSONObject("experimentValueParameters")
+                    experimentValueParameters.put("target", "peer")
+                    targetEndDeviceId?.let {
+                        viewModel.instance?.notifyToConnectedDevice(
+                            it,
+                            MessageTag.D2D_PERFORMANCE,
+                            experimentValueParameters
+                        ) {}
+                    }
+                    resetToStandbyStatus()
+                }
             }
         }
     }

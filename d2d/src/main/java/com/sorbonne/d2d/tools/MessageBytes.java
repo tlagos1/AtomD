@@ -9,8 +9,6 @@ public class MessageBytes {
     public static byte INFO_PACKET_ACK = (byte) 0x82;
     public static byte METRIC = (byte) 0x83;
 
-
-
     /*Type: 128 -> echo request
     *       129 -> echo reply
     *
@@ -22,6 +20,7 @@ public class MessageBytes {
     * */
 
     private byte type;
+    private byte tag;
     private int length;
     private int identifier;
     private int sequenceNumber;
@@ -40,15 +39,17 @@ public class MessageBytes {
 
     private void setAllParametersToZero(){
         this.type = 0;
+        this.tag = 0;
         this.length = 0;
         this.identifier = 0;
         this.sequenceNumber = 0;
         this.payload = new byte[0];
     }
 
-    private void setGeneralMessage(byte type, byte[] payloadData){
+    private void setGeneralMessage(byte type, byte tag, byte[] payloadData){
         this.type = type;
-        this.length = 9;
+        this.tag = tag;
+        this.length = 10;
         if(payloadData != null){
             this.payload = payloadData;
             this.length = this.length + payloadData.length;
@@ -58,16 +59,17 @@ public class MessageBytes {
     private void getPacketValues(byte[] packet_buffer){
         setAllParametersToZero();
         this.type       = packet_buffer[0];
-        this.length     |= ((packet_buffer[1] & 0xff) << 8);
-        this.length     |= ((packet_buffer[2] & 0xff));
-        this.identifier |= ((packet_buffer[3] & 0xff) << 8);
-        this.identifier |= ((packet_buffer[4] & 0xff));
-        this.sequenceNumber |= ((packet_buffer[5] & 0xff) << 24);
-        this.sequenceNumber |= ((packet_buffer[6] & 0xff) << 16);
-        this.sequenceNumber |= ((packet_buffer[7] & 0xff) << 8);
-        this.sequenceNumber |= ((packet_buffer[8] & 0xff));
-        if(packet_buffer.length > 9) {
-            this.payload = Arrays.copyOfRange(packet_buffer, 9, this.length);
+        this.tag       = packet_buffer[1];
+        this.length     |= ((packet_buffer[2] & 0xff) << 8);
+        this.length     |= ((packet_buffer[3] & 0xff));
+        this.identifier |= ((packet_buffer[4] & 0xff) << 8);
+        this.identifier |= ((packet_buffer[5] & 0xff));
+        this.sequenceNumber |= ((packet_buffer[6] & 0xff) << 24);
+        this.sequenceNumber |= ((packet_buffer[7] & 0xff) << 16);
+        this.sequenceNumber |= ((packet_buffer[8] & 0xff) << 8);
+        this.sequenceNumber |= ((packet_buffer[9] & 0xff));
+        if(packet_buffer.length > 10) {
+            this.payload = Arrays.copyOfRange(packet_buffer, 10, this.length);
         }
     }
 
@@ -75,27 +77,28 @@ public class MessageBytes {
     * Function that computes the packet to be sent
      * */
 
-    public void buildRegularPacket(byte chunkType, byte[] payloadData){
+    public void buildRegularPacket(byte chunkType, byte chunkTag, byte[] payloadData){
 
-        setGeneralMessage(chunkType, payloadData);
+        setGeneralMessage(chunkType, chunkTag, payloadData);
 
         this.buffer = new byte[this.length];
 
         /* Buffer values are set */
         buffer[0] = this.type;
+        buffer[1] = this.tag;
 
-        buffer[1] = (byte) ((this.length >> 8) & 0xff);
-        buffer[2] = (byte) (this.length & 0xff);
+        buffer[2] = (byte) ((this.length >> 8) & 0xff);
+        buffer[3] = (byte) (this.length & 0xff);
 
-        buffer[3] = (byte) ((this.identifier >> 8) & 0xff);
-        buffer[4] = (byte) (this.identifier & 0xff);
+        buffer[4] = (byte) ((this.identifier >> 8) & 0xff);
+        buffer[5] = (byte) (this.identifier & 0xff);
 
-        buffer[5] = (byte) ((this.sequenceNumber >> 24) & 0xff);
-        buffer[6] = (byte) ((this.sequenceNumber >> 16) & 0xff);
-        buffer[7] = (byte) ((this.sequenceNumber >> 8) & 0xff);
-        buffer[8] = (byte) (this.sequenceNumber & 0xff);
-        if(this.length - 9 > 0){
-            System.arraycopy(this.payload, 0, buffer, 9, this.length - 9);
+        buffer[6] = (byte) ((this.sequenceNumber >> 24) & 0xff);
+        buffer[7] = (byte) ((this.sequenceNumber >> 16) & 0xff);
+        buffer[8] = (byte) ((this.sequenceNumber >> 8) & 0xff);
+        buffer[9] = (byte) (this.sequenceNumber & 0xff);
+        if(this.length - 10 > 0){
+            System.arraycopy(this.payload, 0, buffer, 10, this.length - 10);
         }
     }
 
@@ -122,6 +125,10 @@ public class MessageBytes {
 
     public byte getType(){
         return this.type;
+    }
+
+    public byte getTag(){
+        return this.tag;
     }
 
     public int getLength(){
