@@ -1,16 +1,21 @@
 package com.sorbonne.atom_d.ui.relay_selection
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.nearby.connection.ConnectionType
-import com.google.android.gms.nearby.connection.Payload
 import com.google.android.gms.nearby.connection.Strategy
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
@@ -26,7 +31,6 @@ import com.sorbonne.atom_d.view_holders.SingleColumnViewHolder
 import com.sorbonne.d2d.D2DListener
 import org.json.JSONObject
 import java.net.InetSocketAddress
-import java.nio.charset.StandardCharsets
 
 class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
     companion object {
@@ -85,6 +89,46 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
 
             viewModel.socketService?.setListener(viewLifecycleOwner,this)
             if (selectedRole?.checkedButtonId == R.id.relay_selection_role_disc || selectedRole?.checkedButtonId == R.id.relay_selection_role_adv) {
+
+                if(selectedRole?.checkedButtonId == R.id.relay_selection_role_disc){
+                    isDiscoverer = true
+                    viewModel.instance?.startDiscovery(
+                        Strategy.P2P_CLUSTER,
+                        false,
+                    )
+                } else if(selectedRole?.checkedButtonId == R.id.relay_selection_role_adv) {
+                    if(!checkForInternet(requireContext())){
+                        Toast.makeText(requireContext(), "Internet access required", Toast.LENGTH_LONG).show()
+                        return@setOnClickListener
+                    }
+                    isDiscoverer = false
+                    MyAlertDialog.showDialog(
+                        parentFragmentManager,
+                        TAG!!,
+                        MyAlertDialog.MessageType.ALERT_INPUT_TEXT,
+                        R.drawable.ic_alert_dialog_info_24,
+                        "Server Ip",
+                        null,
+                        R.layout.dialog_text_input,
+                        filter = "Ipv4",
+                        option1 = fun (ipAddressEditText){
+                            ipAddressEditText as EditText
+                            val ipV4 = ipAddressEditText.text.toString()
+                            Log.e(TAG,ipV4)
+                            viewModel.deviceId?.let { deviceId ->
+                                viewModel.socketService?.initSocketConnection(InetSocketAddress(ipV4,33235),
+                                    deviceId
+                                )
+                            }
+                        }
+                    )
+                    viewModel.instance?.startAdvertising(
+                        viewModel.deviceId!!,
+                        Strategy.P2P_CLUSTER,
+                        false,
+                        ConnectionType.NON_DISRUPTIVE
+                    )
+                }
                 if(start.isEnabled){
                     start.isEnabled = false
                     stopRelaySelection?.isEnabled = true
@@ -93,32 +137,6 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                 bottomNavigationView?.menu?.apply {
                     findItem(R.id.navigation_dashboard).isEnabled = false
                     findItem(R.id.navigation_experiment).isEnabled = false
-                }
-
-                if(selectedRole?.checkedButtonId == R.id.relay_selection_role_disc){
-                    isDiscoverer = true
-
-
-
-                    viewModel.instance?.startDiscovery(
-                        Strategy.P2P_POINT_TO_POINT,
-                        false,
-                    )
-                } else if(selectedRole?.checkedButtonId == R.id.relay_selection_role_adv) {
-                    isDiscoverer = false
-
-                    viewModel.deviceId?.let { deviceId ->
-                        viewModel.socketService?.initSocketConnection(InetSocketAddress("192.168.1.100",33235),
-                            deviceId
-                        )
-                    }
-
-                    viewModel.instance?.startAdvertising(
-                        viewModel.deviceId!!,
-                        Strategy.P2P_CLUSTER,
-                        false,
-                        ConnectionType.NON_DISRUPTIVE
-                    )
                 }
 
                 for (index in 0 until selectedRole!!.childCount){
@@ -161,14 +179,11 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                     if (displayMessageParameters.getString("target") == viewModel.deviceId) {
                         MyAlertDialog.showDialog(
                             parentFragmentManager,
-                            TAG,
-                            "Alert",
-                            displayMessageParameters.getString("message"),
+                            TAG!!,
+                            MyAlertDialog.MessageType.ALERT_INFO,
                             R.drawable.ic_alert_dialog_info_24,
-                            false,
-                            MyAlertDialog.MESSAGE_TYPE.ALERT_INFO,
-                            null,
-                            null
+                            "Alert",
+                            displayMessageParameters.getString("message")
                         )
                     } else {
                         relaySelectionPlayersConnected.forEach { connectedDevice ->
@@ -248,16 +263,44 @@ class RelaySelectionFragment : Fragment(), SocketListener, D2DListener {
                 val messageParameters = JSONObject(jsonMessage.getString("parameters"))
                 MyAlertDialog.showDialog(
                     parentFragmentManager,
-                    TAG,
-                    "Alert",
-                    messageParameters.getString("message"),
+                    TAG!!,
+                    MyAlertDialog.MessageType.ALERT_INFO,
                     R.drawable.ic_alert_dialog_info_24,
-                    false,
-                    MyAlertDialog.MESSAGE_TYPE.ALERT_INFO,
-                    null,
-                    null
+                    "Alert",
+                    messageParameters.getString("message")
                 )
             }
+        }
+    }
+
+    private fun checkForInternet(context: Context): Boolean {
+
+        // register activity with the connectivity manager service
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        // if the android version is equal to M
+        // or greater we need to use the
+        // NetworkCapabilities to check what type of
+        // network has the internet connection
+
+        // Returns a Network object corresponding to
+        // the currently active default data network.
+        val network = connectivityManager.activeNetwork ?: return false
+
+        // Representation of the capabilities of an active network.
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+
+        return when {
+            // Indicates this network uses a Wi-Fi transport,
+            // or WiFi has network connectivity
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+
+            // Indicates this network uses a Cellular transport. or
+            // Cellular has network connectivity
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+
+            // else return false
+            else -> false
         }
     }
 }

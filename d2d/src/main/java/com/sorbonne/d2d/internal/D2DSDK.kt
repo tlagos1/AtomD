@@ -506,6 +506,7 @@ class D2DSDK {
         fusedLocationProviderClient?.removeLocationUpdates(locationCallback)
         fusedLocationProviderClient = null
     }
+
     private fun createLocationRequest(priority: Int, interval: Int): LocationRequest {
         val locationRequest = LocationRequest.Builder(
             priority,

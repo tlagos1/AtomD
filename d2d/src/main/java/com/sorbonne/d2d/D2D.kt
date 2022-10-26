@@ -72,7 +72,6 @@ object D2D {
         instance.sdk?.stopAll()
     }
 
-
     fun sendSetOfChunks(){
 
     }

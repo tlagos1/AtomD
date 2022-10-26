@@ -6,5 +6,5 @@ import org.json.JSONObject
 
 class SocketViewModel: ViewModel() {
 
-    val receivedMessage: MutableLiveData<JSONObject> =  MutableLiveData(JSONObject())
+    val receivedMessage: MutableLiveData<JSONObject> =  MutableLiveData()
 }

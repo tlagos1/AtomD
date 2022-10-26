@@ -64,13 +64,12 @@ class DeleteExperimentFragment : Fragment()  {
 
                 MyAlertDialog.showDialog(
                     parentFragmentManager,
-                    TAG,
+                    TAG!!,
+                    MyAlertDialog.MessageType.ALERT_ACCEPT_CANCEL,
+                    R.drawable.ic_alert_dialog_info_24,
                     "Delete Experiment",
                     "You are about to delete $experimentName. Do you want to continue?",
-                    R.drawable.ic_alert_dialog_info_24,
-                    false,
-                    MyAlertDialog.MESSAGE_TYPE.ALERT_OPTION,
-                    {
+                    option1 = fun (_){
                         when(experimentType) {
                             "CHUNK" ->
                                 viewModel.deleteChunkExperiment(experimentName)
@@ -81,8 +80,7 @@ class DeleteExperimentFragment : Fragment()  {
                             "DISCOVERY" ->
                                 viewModel.deleteConnectionAttempts(experimentName)
                         }
-                    },
-                    null
+                    }
                 )
             }
         }
