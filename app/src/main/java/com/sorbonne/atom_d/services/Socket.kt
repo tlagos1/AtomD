@@ -13,7 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleOwner
 import com.sorbonne.atom_d.R
 import com.sorbonne.atom_d.services.socket.SocketListener
-import com.sorbonne.atom_d.services.socket.SocketViewModel
+import com.sorbonne.atom_d.services.socket.SocketObservers
 import com.sorbonne.atom_d.tools.JsonServerMessage
 import org.json.JSONObject
 import java.io.IOException
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit
 class Socket : Service() {
 
     private val tag = Socket::class.simpleName
-    private val viewModel = SocketViewModel()
+    private val observers = SocketObservers()
 
 
     private var serviceRunningInForeground = false
@@ -76,7 +76,7 @@ class Socket : Service() {
     }
 
     fun setListener(owner: LifecycleOwner, listener: SocketListener){
-        viewModel.receivedMessage.observe(owner){ message ->
+        observers.receivedMessage.observe(owner){ message ->
             listener.receivedMessage(message)
         }
     }
@@ -146,7 +146,7 @@ class Socket : Service() {
                 val decoder = Charset.forName("UTF-8").newDecoder()
                 receivedMessage.flip()
 
-                viewModel.receivedMessage.postValue(JSONObject(decoder.decode(receivedMessage).toString()))
+                observers.receivedMessage.postValue(JSONObject(decoder.decode(receivedMessage).toString()))
             }
         } catch ( e: IOException){
             e.printStackTrace()

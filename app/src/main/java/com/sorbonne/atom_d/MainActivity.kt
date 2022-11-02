@@ -20,7 +20,6 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.google.android.gms.nearby.connection.Payload
 import com.sorbonne.atom_d.ui.dashboard.DashboardFragment
 import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
@@ -41,12 +40,12 @@ class MainActivity : AppCompatActivity(), D2DListener {
     private lateinit var navHostFragment: NavHostFragment
     private lateinit var appBarConfiguration: AppBarConfiguration
 
-    private var socketServiceIntent: Intent ?= null
+    private var socketServiceIntent: Intent? = null
     private var isSocketServiceBound = false
 
-    var d2d: D2D ?= null
-    var androidId: String ?= null
-    var socketService: Socket ?= null
+    var socketService: Socket? = null
+    var d2d: D2D? = null
+    var androidId: String? = null
 
     private val requestPermissionsLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         val isGranted = !result.containsValue(false)
@@ -76,13 +75,11 @@ class MainActivity : AppCompatActivity(), D2DListener {
             ).setListener(this)
                 .build()
         }
+        viewModel.instance = d2d
 
         socketServiceIntent = Intent(this@MainActivity, Socket::class.java)
 
-        viewModel.instance = d2d
-
         setContentView(R.layout.activity_main)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         findViewById<View>(R.id.main_layout)
 
@@ -108,6 +105,7 @@ class MainActivity : AppCompatActivity(), D2DListener {
         super.onConnectivityChange(active)
         navHostFragment.childFragmentManager.fragments.forEach{
             try {
+                (it as? RelaySelectionFragment)?.onConnectivityChange(active)
                 (it as? DashboardFragment)?.onConnectivityChange(active)
             } catch (e: Exception){
                 e.printStackTrace()
@@ -149,14 +147,14 @@ class MainActivity : AppCompatActivity(), D2DListener {
         }
     }
 
-    override fun onInfoPacketReceived(messageTag: Byte, payload: String) {
+    override fun onInfoPacketReceived(messageTag: Byte, payload: List<String>) {
         super.onInfoPacketReceived(messageTag, payload)
         navHostFragment.childFragmentManager.fragments.forEach{
             try {
                 if(messageTag == MessageTag.D2D_PERFORMANCE){
                     (it as? DashboardFragment)?.onInfoPacketReceived(messageTag, payload)
                 }
-                if (messageTag == MessageTag.SOCKET){
+                if (messageTag == MessageTag.RELAY_SELECTION){
                     (it as? RelaySelectionFragment)?.onInfoPacketReceived(messageTag, payload)
                 }
             } catch (e: Exception){
@@ -169,7 +167,11 @@ class MainActivity : AppCompatActivity(), D2DListener {
         super.onReceivedTaskResul(from, value)
         navHostFragment.childFragmentManager.fragments.forEach{
             try {
-                (it as? DashboardFragment)?.onReceivedTaskResul(from, value)
+                if(from == D2D.ParameterTag.RELAY_SELECTION){
+                    (it as? RelaySelectionFragment)?.onReceivedTaskResul(from, value)
+                } else {
+                    (it as? DashboardFragment)?.onReceivedTaskResul(from, value)
+                }
             } catch (e: Exception){
                 e.printStackTrace()
             }
@@ -197,13 +199,13 @@ class MainActivity : AppCompatActivity(), D2DListener {
     override fun onResume() {
         super.onResume()
         startService(Intent(this, Socket::class.java))
-        isSocketServiceBound = bindService(socketServiceIntent, SocketServiceConnection, BIND_AUTO_CREATE)
+        isSocketServiceBound = bindService(socketServiceIntent, serviceConnection, BIND_AUTO_CREATE)
     }
 
     override fun onPause() {
         super.onPause()
         if(isSocketServiceBound){
-            unbindService(SocketServiceConnection)
+            unbindService(serviceConnection)
             isSocketServiceBound = false
         }
     }
@@ -213,12 +215,17 @@ class MainActivity : AppCompatActivity(), D2DListener {
         stopService(Intent(this, Socket::class.java))
     }
     
-    private val SocketServiceConnection : ServiceConnection = object : ServiceConnection{
+    private val serviceConnection: ServiceConnection = object: ServiceConnection{
         override fun onServiceConnected(componentName: ComponentName?, service: IBinder?) {
-            socketService = (service as Socket.LocalBinder).getService()
-            viewModel.socketService = socketService
+            try {
+                (service as? Socket.LocalBinder)?.let {
+                    socketService =  it.getService()
+                    viewModel.socketService = socketService
+                }
+            }catch (e: Exception){
+                e.printStackTrace()
+            }
         }
-
         override fun onServiceDisconnected(p0: ComponentName?) {
             TODO("Not yet implemented")
         }

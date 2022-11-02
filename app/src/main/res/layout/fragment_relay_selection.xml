@@ -88,7 +88,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:layout_weight="0.168">
+                        android:layout_weight="0.3">
 
                         <TextView
                             android:id="@+id/relay_selection_recycleview_id"
@@ -103,63 +103,14 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:orientation="vertical"
-                        android:layout_weight="0.208">
+                        android:layout_weight="0.7">
 
                         <TextView
-                            android:id="@+id/relay_selection_recycleview_cn_dl"
+                            android:id="@+id/relay_selection_recycleview_score"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:ems="10"
-                            android:text="CnDl"
-                            android:gravity="center"
-                            android:textAlignment="center"/>
-                    </LinearLayout>
-
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:layout_weight="0.208">
-
-                        <TextView
-                            android:id="@+id/relay_selection_recycleview_bttr"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:ems="10"
-                            android:text="Battery"
-                            android:gravity="center"
-                            android:textAlignment="center"/>
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:layout_weight="0.208">
-
-                        <TextView
-                            android:id="@+id/relay_selection_recycleview_t_put"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:ems="10"
-                            android:text="Tput"
-                            android:gravity="center"
-                            android:textAlignment="center"/>
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:layout_weight="0.208">
-
-                        <TextView
-                            android:id="@+id/relay_selection_recycleview_rank"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:ems="10"
-                            android:text="Rank"
+                            android:text="Score"
                             android:gravity="center"
                             android:textAlignment="center"/>
                     </LinearLayout>

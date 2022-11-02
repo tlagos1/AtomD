@@ -8,9 +8,6 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.sorbonne.atom_d.R
 import org.json.JSONObject
-import org.w3c.dom.Text
-
-
 
 
 class SingleColumnViewHolder(itemView: View, type: SingleColumnType) : RecyclerView.ViewHolder(itemView) {
@@ -23,10 +20,7 @@ class SingleColumnViewHolder(itemView: View, type: SingleColumnType) : RecyclerV
     private lateinit var radioData: RadioButton
 
     private lateinit var deviceId: TextView
-    private lateinit var connectionDelay: TextView
-    private lateinit var batteryLife: TextView
-    private lateinit var throughput: TextView
-    private lateinit var rank: TextView
+    private lateinit var score: TextView
 
     init{
         when(type){
@@ -36,10 +30,7 @@ class SingleColumnViewHolder(itemView: View, type: SingleColumnType) : RecyclerV
                 radioData = itemView.findViewById(R.id.Data_Radio)
             SingleColumnType.RelaySelection -> {
                 deviceId = itemView.findViewById(R.id.relay_selection_recycleview_id)
-                connectionDelay = itemView.findViewById(R.id.relay_selection_recycleview_cn_dl)
-                batteryLife = itemView.findViewById(R.id.relay_selection_recycleview_bttr)
-                throughput = itemView.findViewById(R.id.relay_selection_recycleview_t_put)
-                rank = itemView.findViewById(R.id.relay_selection_recycleview_rank)
+                score = itemView.findViewById(R.id.relay_selection_recycleview_score)
             }
         }
     }
@@ -58,10 +49,7 @@ class SingleColumnViewHolder(itemView: View, type: SingleColumnType) : RecyclerV
             SingleColumnType.RelaySelection->{
                 data as JSONObject
                 deviceId.text = data.getString("deviceId")
-                connectionDelay.text = String.format("%.2f", data.getDouble("connectionDelay"))
-                batteryLife.text = data.getInt("batteryLife").toString()
-                throughput.text = String.format("%.2f", data.getDouble("throughput"))
-                rank.text = String.format("%.2f", data.getDouble("rank"))
+                score.text = String.format("%.2f", data.getDouble("score"))
             }
         }
     }
