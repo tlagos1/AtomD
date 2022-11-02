@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
 import android.os.Looper
+import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
@@ -21,6 +22,7 @@ import com.google.android.gms.nearby.connection.*
 import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.tools.MessageBytes
 import org.json.JSONObject
+import java.io.File
 import java.nio.charset.StandardCharsets
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -37,6 +39,7 @@ class D2DSDK {
     private val connectedDevices = ConnectedDevices()
 
     private var isDiscoveringAdvertising = false
+    private var isAdvertiser = false
 
     private var fusedLocationProviderClient: FusedLocationProviderClient?= null
 
@@ -47,7 +50,8 @@ class D2DSDK {
     private var discoveryRepetitions = 0
     private var islowPower = false
 
-
+    //File
+    private val listOfFilesIds = mutableListOf<Long>()
 
 
     val permissions: List<String> by lazy {
@@ -78,27 +82,43 @@ class D2DSDK {
         private var payloadById = mutableMapOf<Long, Payload>()
 
         override fun onPayloadReceived(endPointId: String, payload: Payload) {
-            Log.i(TAG,"onPayloadReceived")
             payloadById[payload.id] = payload
         }
 
         override fun onPayloadTransferUpdate(endPointId: String, payloadTransferUpdate: PayloadTransferUpdate) {
             when(payloadTransferUpdate.status){
-                PayloadTransferUpdate.Status.SUCCESS ->{
+                PayloadTransferUpdate.Status.SUCCESS -> {
                     val receivedPayload = payloadById.remove(payloadTransferUpdate.payloadId)
                     when(receivedPayload?.type){
                         Payload.Type.BYTES -> {
                             val messageBytes = MessageBytes(receivedPayload.asBytes())
                             if(messageBytes.type == MessageBytes.INFO_PACKET){
-                                val infoPacket = mutableMapOf<Byte, String>()
-                                infoPacket[messageBytes.tag] = String(messageBytes.payload, StandardCharsets.UTF_8)
+                                val infoPacket = mutableMapOf<Byte, List<String>>()
+                                infoPacket[messageBytes.tag] =
+                                    mutableListOf(endPointId, String(messageBytes.payload, StandardCharsets.UTF_8))
                                 viewModel.infoPacket.value = infoPacket
                             }
+                            if(messageBytes.type == MessageBytes.INFO_FILE){
+                                //TODO
+                            }
                         }
-                        Payload.Type.FILE -> {
-
+                        Payload.Type.FILE -> {}
+                        Payload.Type.STREAM -> {}
+                    }
+                }
+                PayloadTransferUpdate.Status.IN_PROGRESS -> {
+                    if(listOfFilesIds.contains(payloadTransferUpdate.payloadId)) {
+                        Log.e(TAG, "Uploading: ${payloadTransferUpdate.bytesTransferred} - ${payloadTransferUpdate.totalBytes}" )
+                        if (!isAdvertiser) {
+                            //TODO
+                        }
+                        if(payloadTransferUpdate.bytesTransferred == payloadTransferUpdate.totalBytes){
+                            listOfFilesIds.remove(payloadTransferUpdate.payloadId)
                         }
                     }
+                }
+                PayloadTransferUpdate.Status.CANCELED -> {
+                    Log.w(TAG, "payload ${payloadTransferUpdate.payloadId} transfer cancelled")
                 }
             }
         }
@@ -109,7 +129,7 @@ class D2DSDK {
             Log.i(TAG, "endPoint $endPointId - ${discoveredEndpointInfo.endpointName} discovered")
             if(targetDevice != null){
                 if(isDiscoveryExperiment){
-                    val stateTiming = System.currentTimeMillis()
+                    val stateTiming = System.nanoTime()
                     viewModel.discoveryTaskValue.value = discoveryTaskValue(
                         "running",
                         JSONObject()
@@ -128,7 +148,7 @@ class D2DSDK {
                     )?.let {
                         it.addOnSuccessListener {
                             if(isDiscoveryExperiment){
-                                val stateTiming = System.currentTimeMillis()
+                                val stateTiming = System.nanoTime()
                                 viewModel.discoveryTaskValue.value = discoveryTaskValue(
                                     "running",
                                     JSONObject()
@@ -166,8 +186,9 @@ class D2DSDK {
         private var endDeviceName = ""
 
         override fun onConnectionInitiated(endPointId: String, connectionInfo: ConnectionInfo) {
+            isAdvertiser = connectionInfo.isIncomingConnection
             if(isDiscoveryExperiment){
-                val stateTiming = System.currentTimeMillis()
+                val stateTiming = System.nanoTime()
                 viewModel.discoveryTaskValue.value = discoveryTaskValue(
                     "running",
                     JSONObject()
@@ -181,7 +202,7 @@ class D2DSDK {
             connectionClient?.acceptConnection(endPointId, payloadCallback)?.let {
                 it.addOnSuccessListener {
                     if(isDiscoveryExperiment){
-                        val stateTiming = System.currentTimeMillis()
+                        val stateTiming = System.nanoTime()
                         viewModel.discoveryTaskValue.value = discoveryTaskValue(
                             "running",
                             JSONObject()
@@ -200,10 +221,12 @@ class D2DSDK {
         override fun onConnectionResult(endPointId: String, connectionResolution: ConnectionResolution) {
             when(connectionResolution.status.statusCode){
                 CommonStatusCodes.SUCCESS -> {
-                    viewModel.isConnected.value = true
+                    if(connectedDevices.isEmpty()) {
+                        viewModel.isConnected.value = true
+                    }
                     if(discoveryRepetitions > 0){
                         if(isDiscoveryExperiment){
-                            val stateTiming = System.currentTimeMillis()
+                            val stateTiming = System.nanoTime()
                             viewModel.discoveryTaskValue.value = discoveryTaskValue(
                                 "running",
                                 JSONObject()
@@ -317,7 +340,7 @@ class D2DSDK {
                     discoveryOption
                 ).addOnSuccessListener {
                     if(isDiscoveryExperiment){
-                        val stateTiming = System.currentTimeMillis()
+                        val stateTiming = System.nanoTime()
                         islowPower = lowPower
 
                         viewModel.discoveryTaskValue.value = discoveryTaskValue(
@@ -370,7 +393,7 @@ class D2DSDK {
         }
     }
 
-    fun notifyToConnectedDevice(endPointId: String, tag: Byte, notificationParameters: JSONObject, afterCompleteTask:()->Unit?){
+    fun notifyToConnectedDevice(endPointId: String, tag: Byte, notificationParameters: JSONObject, afterCompleteTask:(()->Any?)?){
         val messageBytes = MessageBytes()
 
         messageBytes.buildRegularPacket(
@@ -385,7 +408,74 @@ class D2DSDK {
             }.addOnFailureListener { e ->
                 e.printStackTrace()
             }.addOnCompleteListener {
-                afterCompleteTask()
+                if (afterCompleteTask != null) {
+                    afterCompleteTask()
+                }
+            }
+        }
+    }
+
+    fun notifyToAllConnectedDevices(tag: Byte, messageType: Byte, notificationParameters: JSONObject, afterCompleteTask:(()->Any?)?){
+        val messageBytes = MessageBytes()
+        messageBytes.buildRegularPacket(
+            messageType,
+            tag,
+            notificationParameters.toString().toByteArray(StandardCharsets.UTF_8)
+        )
+        if(!connectedDevices.isEmpty()){
+            connectionClient?.let {
+                it.sendPayload(connectedDevices.getEndPointIds().toList(), Payload.fromBytes(messageBytes.buffer))
+                    .addOnSuccessListener {
+                        Log.i(TAG, "message successfully sent to ${connectedDevices.getEndPointIds()}")
+                    }.addOnFailureListener { e ->
+                        e.printStackTrace()
+                    }.addOnCompleteListener {
+                        if (afterCompleteTask != null) {
+                            afterCompleteTask()
+                        }
+                    }
+            }
+        }
+    }
+
+    fun sendFileToConnectedDevices(tag: Byte, file: File, afterCompleteTask:(()->Any?)?){
+
+        if(!connectedDevices.isEmpty()) {
+            val payloadFile = Payload.fromFile(file)
+
+            listOfFilesIds.add(payloadFile.id)
+            notifyToAllConnectedDevices(
+                tag,
+                MessageBytes.INFO_FILE,
+                JSONObject().put("payloadId", payloadFile.id)
+            ){
+                connectionClient?.let {
+                    it.sendPayload(connectedDevices.getEndPointIds().toList(), payloadFile)
+                        .addOnSuccessListener {
+                            Log.i(TAG, "file successfully sent to ${connectedDevices.getEndPointIds()}")
+                        }.addOnFailureListener { e ->
+                            Log.e(TAG,"sendPayload Fail")
+                            e.printStackTrace()
+                        }.addOnCompleteListener {
+                            Log.e(TAG,"task completed")
+                            if (afterCompleteTask != null) {
+                                afterCompleteTask()
+                            }
+                        }
+                }
+            }
+        }
+    }
+
+    fun cancelFileTransferIfAny(afterCompleteTask: (()->Any?)? = null){
+        connectionClient?.let {
+            listOfFilesIds.forEach { payloadId ->
+                it.cancelPayload(payloadId)
+                    .addOnCompleteListener {
+                        if (afterCompleteTask != null) {
+                            afterCompleteTask()
+                        }
+                    }
             }
         }
     }
@@ -504,6 +594,7 @@ class D2DSDK {
         fusedLocationProviderClient?.removeLocationUpdates(locationCallback)
         fusedLocationProviderClient = null
     }
+
     private fun createLocationRequest(priority: Int, interval: Int): LocationRequest {
         val locationRequest = LocationRequest.Builder(
             priority,

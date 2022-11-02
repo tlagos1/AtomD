@@ -1,9 +1,13 @@
 package com.sorbonne.atom_d
 
 import android.annotation.SuppressLint
+import android.content.ComponentName
+import android.content.Intent
+import android.content.ServiceConnection
 import android.location.Location
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.IBinder
 import android.provider.Settings
 import android.util.Log
 import android.view.View
@@ -133,7 +137,7 @@ class MainActivity : AppCompatActivity(), D2DListener {
         }
     }
 
-    override fun onInfoPacketReceived(messageTag: Byte, payload: String) {
+    override fun onInfoPacketReceived(messageTag: Byte, payload: List<String>) {
         super.onInfoPacketReceived(messageTag, payload)
         navHostFragment.childFragmentManager.fragments.forEach{
             try {

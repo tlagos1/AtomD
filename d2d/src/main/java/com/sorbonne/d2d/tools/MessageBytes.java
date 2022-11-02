@@ -6,18 +6,8 @@ public class MessageBytes {
 
     public static byte ECHO_REQUEST = (byte) 0x80;
     public static byte INFO_PACKET = (byte) 0x81;
-    public static byte INFO_PACKET_ACK = (byte) 0x82;
-    public static byte METRIC = (byte) 0x83;
+    public static byte INFO_FILE = (byte) 0x82;
 
-    /*Type: 128 -> echo request
-    *       129 -> echo reply
-    *
-    * length: size of the total payload where the message is hosted
-    *
-    * Identifier: unique identifier for every ping process (16 bits)
-    *
-    * SequenceNumber: incremental sequence number per packet sent.
-    * */
 
     private byte type;
     private byte tag;

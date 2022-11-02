@@ -8,6 +8,7 @@ import com.google.android.gms.nearby.connection.Payload
 import com.sorbonne.d2d.internal.D2DSDK
 import com.google.android.gms.nearby.connection.Strategy
 import org.json.JSONObject
+import java.io.File
 import java.util.Objects
 
 object D2D {
@@ -42,8 +43,20 @@ object D2D {
         instance.sdk?.startAdvertising(deviceName, strategy, lowPower, connectionType)
     }
 
-    fun notifyToConnectedDevice(endPointId: String, tag: Byte, notificationParameters: JSONObject, afterCompleteTask:()->Unit? ){
+    fun notifyToConnectedDevice(endPointId: String, tag: Byte, notificationParameters: JSONObject, afterCompleteTask:(()->Any?)? = null){
         instance.sdk?.notifyToConnectedDevice(endPointId, tag, notificationParameters, afterCompleteTask)
+    }
+
+    fun notifyToAllConnectedDevices(tag: Byte, messageType: Byte, notificationParameters: JSONObject, afterCompleteTask:(()->Any?)? = null){
+        instance.sdk?.notifyToAllConnectedDevices(tag, messageType, notificationParameters, afterCompleteTask)
+    }
+
+    fun sendFileToConnectedDevices(tag: Byte,file: File, afterCompleteTask: (()->Any?)? = null){
+        instance.sdk?.sendFileToConnectedDevices(tag, file, afterCompleteTask)
+    }
+
+    fun cancelFileTransferIfAny(afterCompleteTask: (()->Any?)? = null){
+        instance.sdk?.cancelFileTransferIfAny(afterCompleteTask)
     }
 
     fun isConnected(): Boolean {
@@ -71,7 +84,6 @@ object D2D {
     fun stopAll(){
         instance.sdk?.stopAll()
     }
-
 
     fun sendSetOfChunks(){
 

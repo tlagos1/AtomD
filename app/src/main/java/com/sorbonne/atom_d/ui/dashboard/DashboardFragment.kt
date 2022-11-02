@@ -37,6 +37,7 @@ import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
 import org.json.JSONObject
 import java.util.*
+import kotlin.collections.List
 
 class DashboardFragment : Fragment(), D2DListener {
 
@@ -236,12 +237,12 @@ class DashboardFragment : Fragment(), D2DListener {
         }
     }
 
-    override fun onInfoPacketReceived(messageTag: Byte, payload: String) {
+    override fun onInfoPacketReceived(messageTag: Byte, payload: List<String>) {
         super.onInfoPacketReceived(messageTag, payload)
         Log.i(TAG, "onInfoPacketReceived: $payload")
 
         val notificationParameters: JSONObject
-        val payloadParameters = JSONObject(payload)
+        val payloadParameters = JSONObject(payload[1])
         when(payloadParameters.get("experimentType")){
             "discovery" -> {
                 when(payloadParameters.get("experimentMessageType")){
@@ -346,6 +347,7 @@ class DashboardFragment : Fragment(), D2DListener {
                     resetToStandbyStatus()
                 }
             }
+            else -> {}
         }
     }
 

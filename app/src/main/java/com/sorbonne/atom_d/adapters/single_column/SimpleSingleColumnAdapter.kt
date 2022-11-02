@@ -11,7 +11,7 @@ class SimpleSingleColumnAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SingleColumnViewHolder {
         return try {
-            SingleColumnViewHolder.create(parent, SingleColumnViewHolder.SingleColumnType.TextView)
+            SingleColumnViewHolder.create(parent, type)
         } catch (e: Exception) {
             throw IllegalArgumentException(e.message)
         }

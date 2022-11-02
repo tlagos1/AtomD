@@ -21,7 +21,7 @@ class D2DViewModel: ViewModel() {
     val taskProgress: MutableLiveData<Int> = MutableLiveData()
 
     val discoveryTaskValue: MutableLiveData<JSONObject> = MutableLiveData()
-    val infoPacket: MutableLiveData<MutableMap<Byte, String>> = MutableLiveData()
+    val infoPacket: MutableLiveData<MutableMap<Byte, List<String>>> = MutableLiveData()
 
     val lastLocation: MutableLiveData<Location> = MutableLiveData()
 }
