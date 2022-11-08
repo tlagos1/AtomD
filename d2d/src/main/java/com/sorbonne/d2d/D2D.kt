@@ -16,6 +16,7 @@ object D2D {
     private val instance = this
 
     enum class ParameterTag{
+        FILE,
         DISCOVERY
     }
 
@@ -89,8 +90,9 @@ object D2D {
 
     }
 
-    fun sendSetOfBinaryFile(){
 
+    fun performFileExperiment(targetDevices: List<String>, tag: Byte, experimentName: String, repetitions: Int, file: File){
+        instance.sdk?.performFileExperiment(targetDevices, tag, experimentName, repetitions, file)
     }
 
     fun performDiscoverAttempts(targetDevice: String, repetitions: Int, isLowPower: Boolean){

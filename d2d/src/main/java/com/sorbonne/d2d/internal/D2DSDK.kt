@@ -5,12 +5,9 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.Location
 import android.os.Build
 import android.os.Looper
-import android.os.ParcelFileDescriptor
 import android.util.Log
-import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.sorbonne.d2d.D2DListener
@@ -45,6 +42,13 @@ class D2DSDK {
 
     private var targetDevice:String ?= null
     private var totalNumberOfTask: Int = 0
+    private var experimentId: Long = 0
+    private var experimentName = ""
+    //file_experiment
+    private var isUploader = false
+    private var totalNumberOfTargetDevices: Int = 0
+    private var isFileExperiment: Boolean = false
+    private var numberOfFileRepetitions = mutableMapOf<String, Int>()
     // Discovery_experiment
     private var isDiscoveryExperiment = false
     private var discoveryRepetitions = 0
@@ -92,27 +96,94 @@ class D2DSDK {
                     when(receivedPayload?.type){
                         Payload.Type.BYTES -> {
                             val messageBytes = MessageBytes(receivedPayload.asBytes())
+                            val translatedPayload = String(messageBytes.payload, StandardCharsets.UTF_8)
                             if(messageBytes.type == MessageBytes.INFO_PACKET){
                                 val infoPacket = mutableMapOf<Byte, List<String>>()
                                 infoPacket[messageBytes.tag] =
-                                    mutableListOf(endPointId, String(messageBytes.payload, StandardCharsets.UTF_8))
+                                    mutableListOf(endPointId, translatedPayload)
                                 viewModel.infoPacket.value = infoPacket
                             }
                             if(messageBytes.type == MessageBytes.INFO_FILE){
-                                //TODO
+                                isUploader = false
+                                val fileInfo = JSONObject(translatedPayload)
+                                Log.i(TAG, translatedPayload)
+                                experimentId = fileInfo.getLong("experimentId")
+                                experimentName = fileInfo.getString("experimentName")
+                                isFileExperiment = fileInfo.getBoolean("isFileExperiment")
+                                listOfFilesIds.add(fileInfo.getLong("payloadId"))
+                                totalNumberOfTask = fileInfo.getInt("totalNumberOfTask")
+
+                                totalNumberOfTargetDevices = 1
                             }
                         }
-                        Payload.Type.FILE -> {}
+                        Payload.Type.FILE -> {
+                            Log.i(TAG, "File received")
+                        }
                         Payload.Type.STREAM -> {}
                     }
                 }
                 PayloadTransferUpdate.Status.IN_PROGRESS -> {
+//                    if(isUploader) {
+//                        Log.i(
+//                            TAG,
+//                            "Uploading to $deviceName: ${payloadTransferUpdate.bytesTransferred} - ${payloadTransferUpdate.totalBytes}"
+//                        )
+//                    } else {
+//                        Log.i(
+//                            TAG,
+//                            "Downloading: ${payloadTransferUpdate.bytesTransferred} - ${payloadTransferUpdate.totalBytes}"
+//                        )
+//                    }
                     if(listOfFilesIds.contains(payloadTransferUpdate.payloadId)) {
-                        Log.e(TAG, "Uploading: ${payloadTransferUpdate.bytesTransferred} - ${payloadTransferUpdate.totalBytes}" )
-                        if (!isAdvertiser) {
-                            //TODO
+                        if(!numberOfFileRepetitions.containsKey(endPointId)){
+                            numberOfFileRepetitions[endPointId] = 0
+                        }
+                        if(isFileExperiment) {
+                            viewModel.fileTransferTaskValue.value = taskValue(
+                                "running",
+                                JSONObject()
+                                    .put("experimentId", experimentId)
+                                    .put("experimentName", experimentName)
+                                    .put("targetId", connectedDevices.getDeviceName(endPointId))
+                                    .put("repetition", numberOfFileRepetitions[endPointId])
+                                    .put("bytesTransferred", payloadTransferUpdate.bytesTransferred)
+                                    .put("bytesToTransfer", payloadTransferUpdate.totalBytes)
+                                    .put("timing", System.nanoTime())
+                                    .put("uploading", isUploader)
+                            )
+                            viewModel.taskProgress.value = ((payloadTransferUpdate.bytesTransferred.toDouble()/payloadTransferUpdate.totalBytes)*100).toInt()
                         }
                         if(payloadTransferUpdate.bytesTransferred == payloadTransferUpdate.totalBytes){
+                            if(isFileExperiment) {
+                                numberOfFileRepetitions[endPointId]?.let {
+                                    numberOfFileRepetitions[endPointId] = it + 1
+                                }
+                                if(numberOfFileRepetitions.size == totalNumberOfTargetDevices){
+                                    var fileTaskCompleted = 0
+                                    numberOfFileRepetitions.values.forEachIndexed { index, counter ->
+                                        if(index == 0){
+                                            fileTaskCompleted = counter
+                                        } else {
+                                            if(counter < fileTaskCompleted){
+                                                fileTaskCompleted = counter
+                                            }
+                                        }
+                                    }
+                                    val experimentProgression = ((fileTaskCompleted.toDouble()/totalNumberOfTask)* 100).toInt()
+                                    if(experimentProgression == 100){
+                                        numberOfFileRepetitions.clear()
+                                        listOfFilesIds.clear()
+                                        Log.i(TAG, "File experiment finished")
+                                        viewModel.fileTransferTaskValue.value = taskValue(
+                                            "finished",
+                                            notificationParametersForCompletedExperiment("file")
+                                        )
+                                        isFileExperiment = false
+                                    }
+                                    viewModel.experimentProgress.value = experimentProgression
+                                }
+                                return
+                            }
                             listOfFilesIds.remove(payloadTransferUpdate.payloadId)
                         }
                     }
@@ -130,7 +201,7 @@ class D2DSDK {
             if(targetDevice != null){
                 if(isDiscoveryExperiment){
                     val stateTiming = System.nanoTime()
-                    viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                    viewModel.discoveryTaskValue.value = taskValue(
                         "running",
                         JSONObject()
                             .put("totalNumberOfAttempts", totalNumberOfTask)
@@ -149,7 +220,7 @@ class D2DSDK {
                         it.addOnSuccessListener {
                             if(isDiscoveryExperiment){
                                 val stateTiming = System.nanoTime()
-                                viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                                viewModel.discoveryTaskValue.value = taskValue(
                                     "running",
                                     JSONObject()
                                         .put("totalNumberOfAttempts", totalNumberOfTask)
@@ -189,7 +260,7 @@ class D2DSDK {
             isAdvertiser = connectionInfo.isIncomingConnection
             if(isDiscoveryExperiment){
                 val stateTiming = System.nanoTime()
-                viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                viewModel.discoveryTaskValue.value = taskValue(
                     "running",
                     JSONObject()
                         .put("totalNumberOfAttempts", totalNumberOfTask)
@@ -203,7 +274,7 @@ class D2DSDK {
                 it.addOnSuccessListener {
                     if(isDiscoveryExperiment){
                         val stateTiming = System.nanoTime()
-                        viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                        viewModel.discoveryTaskValue.value = taskValue(
                             "running",
                             JSONObject()
                                 .put("totalNumberOfAttempts", totalNumberOfTask)
@@ -227,9 +298,10 @@ class D2DSDK {
                     if(discoveryRepetitions > 0){
                         if(isDiscoveryExperiment){
                             val stateTiming = System.nanoTime()
-                            viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                            viewModel.discoveryTaskValue.value = taskValue(
                                 "running",
                                 JSONObject()
+                                    .put("targetId", connectedDevices.getDeviceName(endPointId))
                                     .put("totalNumberOfAttempts", totalNumberOfTask)
                                     .put("isLowPower", islowPower)
                                     .put("attempt", discoveryRepetitions)
@@ -243,7 +315,7 @@ class D2DSDK {
                             targetDevice = null
                             viewModel.connectedDevices.value =
                                 JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$endDeviceName\"}")
-                            viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                            viewModel.discoveryTaskValue.value = taskValue(
                                 "finished",
                                 notificationParametersForCompletedExperiment("discovery")
                             )
@@ -310,6 +382,9 @@ class D2DSDK {
         viewModel.taskProgress.observe(owner){ taskProgress ->
             listener?.onExperimentProgress(false, taskProgress)
         }
+        viewModel.fileTransferTaskValue.observe(owner){ taskValue ->
+            listener?.onReceivedTaskResul(D2D.ParameterTag.FILE, taskValue)
+        }
         viewModel.discoveryTaskValue.observe(owner){ taskValue ->
             listener?.onReceivedTaskResul(D2D.ParameterTag.DISCOVERY, taskValue)
         }
@@ -343,7 +418,7 @@ class D2DSDK {
                         val stateTiming = System.nanoTime()
                         islowPower = lowPower
 
-                        viewModel.discoveryTaskValue.value = discoveryTaskValue(
+                        viewModel.discoveryTaskValue.value = taskValue(
                             "running",
                             JSONObject()
                                 .put("totalNumberOfAttempts", totalNumberOfTask)
@@ -414,7 +489,26 @@ class D2DSDK {
             }
         }
     }
+    fun notifyToSetOfConnectedDevices(setOfDevices: List<String>, tag: Byte, messageType: Byte, notificationParameters: JSONObject, afterCompleteTask:(()->Any?)?){
+        val messageBytes = MessageBytes()
+        messageBytes.buildRegularPacket(
+            messageType,
+            tag,
+            notificationParameters.toString().toByteArray(StandardCharsets.UTF_8)
+        )
+        connectionClient?.sendPayload(setOfDevices, Payload.fromBytes(messageBytes.buffer))?.let { it ->
+            it.addOnSuccessListener {
+                Log.i(TAG, "message successfully sent to $setOfDevices")
+            }.addOnFailureListener { e ->
+                e.printStackTrace()
+            }.addOnCompleteListener {
+                if (afterCompleteTask != null) {
+                    afterCompleteTask()
+                }
+            }
+        }
 
+    }
     fun notifyToAllConnectedDevices(tag: Byte, messageType: Byte, notificationParameters: JSONObject, afterCompleteTask:(()->Any?)?){
         val messageBytes = MessageBytes()
         messageBytes.buildRegularPacket(
@@ -439,7 +533,7 @@ class D2DSDK {
     }
 
     fun sendFileToConnectedDevices(tag: Byte, file: File, afterCompleteTask:(()->Any?)?){
-
+        isUploader = true
         if(!connectedDevices.isEmpty()) {
             val payloadFile = Payload.fromFile(file)
 
@@ -457,7 +551,6 @@ class D2DSDK {
                             Log.e(TAG,"sendPayload Fail")
                             e.printStackTrace()
                         }.addOnCompleteListener {
-                            Log.e(TAG,"task completed")
                             if (afterCompleteTask != null) {
                                 afterCompleteTask()
                             }
@@ -465,6 +558,29 @@ class D2DSDK {
                 }
             }
         }
+    }
+
+    private fun sendFileToSetOfDevices(setOfDevices: List<String>, tag: Byte, file: File, fileInfo: JSONObject, afterCompleteTask:(()->Any?)?){
+        isUploader = true
+        val payload = Payload.fromFile(file)
+        listOfFilesIds.add(payload.id)
+        totalNumberOfTargetDevices = setOfDevices.size
+        notifyToSetOfConnectedDevices(setOfDevices, tag, MessageBytes.INFO_FILE,fileInfo.put("payloadId", payload.id)) {
+            connectionClient?.let {
+                it.sendPayload(setOfDevices, payload)
+                    .addOnSuccessListener {
+                        Log.i(TAG, "file successfully sent to ${connectedDevices.getEndPointIds()}")
+                    }.addOnFailureListener { e ->
+                        Log.e(TAG,"sendPayload Fail")
+                        e.printStackTrace()
+                    }.addOnCompleteListener {
+                        if (afterCompleteTask != null) {
+                            afterCompleteTask()
+                        }
+                    }
+            }
+        }
+
     }
 
     fun cancelFileTransferIfAny(afterCompleteTask: (()->Any?)? = null){
@@ -492,8 +608,25 @@ class D2DSDK {
 
     }
 
-    fun sendSetOfBinaryFile(){
+    fun performFileExperiment(targetDevices: List<String>, tag: Byte, experimentName: String, repetitions: Int, file: File){
+        this.experimentId = System.currentTimeMillis()
+        this.experimentName = experimentName
+        this.totalNumberOfTask = repetitions
+        this.isFileExperiment = true
+        this.numberOfFileRepetitions.clear()
 
+        for (i in  0 until repetitions){
+
+            sendFileToSetOfDevices(targetDevices, tag, file,
+                    JSONObject()
+                    .put("experimentId", experimentId)
+                    .put("experimentName", experimentName)
+                    .put("isFileExperiment", true)
+                    .put("totalNumberOfTask", repetitions)
+            ){
+                Log.i(TAG, "performFileExperiment repetition: $i")
+            }
+        }
     }
 
     fun performDiscoverAttempts(targetDevice: String,repetitions: Int, lowPower: Boolean){
@@ -545,6 +678,7 @@ class D2DSDK {
             viewModel.isDiscoveryActive.value = false
             viewModel.isConnected.value = false
             isDiscoveryExperiment = false
+            isFileExperiment = false
             connectedDevices.getEndPointIds().forEach{ endPointId ->
                 viewModel.disconnectedDevices.value =  JSONObject("{\"endPointId\": \"$endPointId\", \"endPointParameters\": ${connectedDevices.getDeviceParameters(endPointId)}}")
                 Log.i(TAG, "disconnected from  $endPointId")
@@ -613,7 +747,8 @@ class D2DSDK {
         return notificationParameters
     }
 
-    private fun discoveryTaskValue(experimentState: String, experimentValueParameters: JSONObject): JSONObject {
+
+    private fun taskValue(experimentState: String, experimentValueParameters: JSONObject): JSONObject {
         return JSONObject()
             .put("experimentState", experimentState)
             .put("experimentValueParameters", experimentValueParameters)

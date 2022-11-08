@@ -10,7 +10,8 @@ enum class EntityType {
     ChunkExperiments,
     FileExperiments,
     ConnectionAttempts,
-    CustomQueries
+    CustomQueries,
+    DynamicList
 }
 
 class EntityComparator(private val entityType: EntityType) : DiffUtil.ItemCallback<Any>() {
@@ -28,6 +29,9 @@ class EntityComparator(private val entityType: EntityType) : DiffUtil.ItemCallba
                 (oldItem as ConnectionAttempts).expName == (newItem as ConnectionAttempts).expName
             EntityType.CustomQueries ->
                 (oldItem as CustomQueriesDao.AllExperimentsName).experiment_name == (newItem as CustomQueriesDao.AllExperimentsName).experiment_name
+            else -> {
+                false
+            }
         }
     }
 }

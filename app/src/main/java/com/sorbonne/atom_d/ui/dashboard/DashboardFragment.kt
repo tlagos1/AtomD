@@ -7,14 +7,11 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.ProgressBar
-import android.widget.Switch
-import android.widget.TextView
+import android.widget.*
+import android.widget.AdapterView.OnItemSelectedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.Navigation
 import com.google.android.gms.nearby.connection.ConnectionType
 import com.google.android.gms.nearby.connection.Strategy
 import com.google.android.material.button.MaterialButtonToggleGroup
@@ -27,19 +24,24 @@ import com.sorbonne.atom_d.entities.DatabaseRepository
 import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttempts
 import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
 import com.sorbonne.atom_d.entities.data_connection_attempts.DataConnectionAttempts
+import com.sorbonne.atom_d.entities.data_file_experiments.DataFileExperiments
 import com.sorbonne.atom_d.guard
 import com.sorbonne.atom_d.tools.CustomRecyclerView
 import com.sorbonne.atom_d.tools.MessageTag
+import com.sorbonne.atom_d.tools.MyAlertDialog
+import com.sorbonne.atom_d.ui.experiment.ExperimentFragmentDirections
 import com.sorbonne.atom_d.ui.experiment.ExperimentViewModel
 import com.sorbonne.atom_d.ui.experiment.ExperimentViewModelFactory
 import com.sorbonne.atom_d.view_holders.DoubleColumnViewHolder
 import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
 import org.json.JSONObject
+import java.io.File
+import java.io.RandomAccessFile
 import java.util.*
-import kotlin.collections.List
 
-class DashboardFragment : Fragment(), D2DListener {
+
+class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
 
     private val TAG = DashboardFragment::class.simpleName
 
@@ -49,7 +51,8 @@ class DashboardFragment : Fragment(), D2DListener {
         ExperimentViewModelFactory(DatabaseRepository(requireActivity().application))
     }
 
-    private val strategy = Strategy.P2P_STAR
+    private var strategy: Strategy ?= null
+    private var readableStrategy: Int = -1
 
     private var discoveryState: Chip?= null
     private var connectionState: Chip?= null
@@ -70,16 +73,23 @@ class DashboardFragment : Fragment(), D2DListener {
     private var viewInstanceState: Bundle ?= null
 
     private var targetEndDeviceId:String ?= null
-    private var targetDeviceId:String ?= null
     private var experimentId: Long = 0
 
     private var isExperimentRunning = false
+    private var isValidStrategy = false
+    private var isValidRole = false
+
+    private val adapterConnectedDevices = EntityAdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.CheckBoxTextView, EntityType.DynamicList)
+    private val connectedDevices = mutableMapOf<String, String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.e(TAG, "onCreate")
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this, DashboardViewModel.Factory(context, DatabaseRepository(requireActivity().application)))[DashboardViewModel::class.java]
         viewModel.instance = (context as? MainActivity).guard { return }.d2d
         viewModel.deviceId = (context as? MainActivity).guard { return }.androidId
+
+        viewModel.connectedDevices.observe(requireActivity(), adapterConnectedDevices::submitList )
     }
 
     override fun onCreateView(
@@ -98,17 +108,26 @@ class DashboardFragment : Fragment(), D2DListener {
         val selectedRole: MaterialButtonToggleGroup = view.findViewById(R.id.dashboard_role)
         startExperiment = view.findViewById(R.id.dashboard_start_experiment)
         stopExperiment = view.findViewById(R.id.dashboard_stop_experiment)
-        val endDevicesDiscovered: Button = view.findViewById(R.id.dashboard_playerList)
+//        val endDevicesDiscovered: Button = view.findViewById(R.id.dashboard_playerList)
+        val d2dStrategies: Spinner = view.findViewById(R.id.dashboard_strategies)
         val gps: Switch = view.findViewById(R.id.dashboard_gps_button)
         guiLatitude = view.findViewById(R.id.dashboard_latitude)
         guiLongitude = view.findViewById(R.id.dashboard_longitude)
         taskProgressBar = view.findViewById(R.id.dashboard_payload_task_progressBar)
         experimentProgressBar = view.findViewById(R.id.dashboard_payload_experiment_progressBar)
 
-
-
         startExperiment.isEnabled = false
         stopExperiment.isEnabled = false
+
+        val spinnerAdapter: ArrayAdapter<String> = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            arrayOf("Strategies","P2P_POINT_TO_POINT", "P2P_STAR", "P2P_CLUSTER")
+        )
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        d2dStrategies.adapter = spinnerAdapter
+        d2dStrategies.onItemSelectedListener = this
+
 
         val dashboardAdapter = EntityAdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView, EntityType.CustomQueries)
         CustomRecyclerView(
@@ -126,16 +145,36 @@ class DashboardFragment : Fragment(), D2DListener {
         deviceId.text = viewModel.deviceId.toString()
 
         initD2D.setOnClickListener{
-            it.isEnabled = false
-            stopExperiment.isEnabled = true
-            if(selectedRole.checkedButtonId == R.id.dashboard_role_disc || selectedRole.checkedButtonId == R.id.dashboard_role_adv){
-                if(selectedRole.checkedButtonId == R.id.dashboard_role_disc){
-                    viewModel.instance?.startDiscovery(strategy, false)
-                }else{
-                    viewModel.deviceId?.let {
-                            deviceName -> viewModel.instance?.startAdvertising(deviceName, strategy, false, ConnectionType.DISRUPTIVE)
+            if(isValidStrategy && strategy != Strategy.P2P_CLUSTER) {
+                if (selectedRole.checkedButtonId == R.id.dashboard_role_disc || selectedRole.checkedButtonId == R.id.dashboard_role_adv) {
+                    it.isEnabled = false
+                    stopExperiment.isEnabled = true
+
+                    if (selectedRole.checkedButtonId == R.id.dashboard_role_disc) {
+                        viewModel.instance?.startDiscovery(strategy!!, false)
+                    } else {
+                        viewModel.deviceId?.let { deviceName ->
+                            viewModel.instance?.startAdvertising(
+                                deviceName,
+                                strategy!!,
+                                false,
+                                ConnectionType.DISRUPTIVE
+                            )
+                        }
                     }
                 }
+            } else if(isValidStrategy && strategy == Strategy.P2P_CLUSTER){
+                viewModel.instance?.startDiscovery(strategy!!, false)
+                viewModel.deviceId?.let { deviceName ->
+                    viewModel.instance?.startAdvertising(
+                        deviceName,
+                        strategy!!,
+                        false,
+                        ConnectionType.DISRUPTIVE
+                    )
+                }
+            } else {
+                Toast.makeText(requireContext(), "Strategy or Role not valid", Toast.LENGTH_LONG).show()
             }
         }
 
@@ -148,8 +187,15 @@ class DashboardFragment : Fragment(), D2DListener {
         }
 
         startExperiment.setOnClickListener {
+
+            if(dashboardAdapter.currentList.isEmpty() || dashboardAdapter.getLastCheckedPosition() < 0){
+                Toast.makeText(requireContext(), "Experiment not valid", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
             isExperimentRunning = true
             it.isEnabled = false
+
             dashboardAdapter.currentList[dashboardAdapter.getLastCheckedPosition()].let { selectedExperiment ->
                 selectedExperiment as CustomQueriesDao.AllExperimentsName
                 val notificationParameters: JSONObject
@@ -159,7 +205,37 @@ class DashboardFragment : Fragment(), D2DListener {
                         viewModel.instance?.sendSetOfChunks()
                     }
                     "FILE" ->{
-                        viewModel.instance?.sendSetOfBinaryFile()
+                        MyAlertDialog.showDialog(
+                            parentFragmentManager,
+                            TAG!!,
+                            MyAlertDialog.MessageType.ALERT_INPUT_RECYCLE_VIEW,
+                            R.drawable.ic_alert_dialog_info_24,
+                            "Connected Devices",
+                            null,
+                            R.layout.dialog_recycleview,
+                            adapterDoubleColumn = adapterConnectedDevices,
+                            option1 = fun (recycleViewAdapter){
+                                recycleViewAdapter as EntityAdapterDoubleColumn
+                                if(recycleViewAdapter.getCheckedBoxes().isEmpty()){
+                                    it.isEnabled = true
+                                    return
+                                }
+
+                                val testFile = File.createTempFile("testFile",null, requireContext().cacheDir)
+                                val raf = RandomAccessFile(testFile, "rw")
+                                raf.setLength(selectedExperiment.size)
+                                raf.close()
+
+                                viewModel.instance?.performFileExperiment(
+                                    recycleViewAdapter.getCheckedBoxes(),
+                                    MessageTag.D2D_PERFORMANCE,
+                                    selectedExperiment.experiment_name,
+                                    selectedExperiment.attempts,
+                                    testFile
+                                )
+                            }
+                        )
+//                        viewModel.instance?.performFileExperiment()
                     }
                     "DISCOVERY" ->{
 
@@ -184,10 +260,10 @@ class DashboardFragment : Fragment(), D2DListener {
             viewModel.instance?.stopAll()
         }
 
-        endDevicesDiscovered.setOnClickListener {
-            val action = DashboardFragmentDirections.actionDashboardFragmentToEndpointsDiscoveredFragment()
-            Navigation.findNavController(view).navigate(action)
-        }
+//        endDevicesDiscovered.setOnClickListener {
+//            val action = DashboardFragmentDirections.actionDashboardFragmentToEndpointsDiscoveredFragment()
+//            Navigation.findNavController(view).navigate(action)
+//        }
 
         if(viewInstanceState != null){
             isExperimentRunning = viewInstanceState!!.getBoolean("isExperimentRunning")
@@ -199,8 +275,39 @@ class DashboardFragment : Fragment(), D2DListener {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        viewModel.instance?.stopAll()
+    }
+
+    override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, index: Int, Id: Long) {
+         when(index){
+            1 ->{
+                strategy = Strategy.P2P_POINT_TO_POINT
+            }
+            2 -> {
+                strategy = Strategy.P2P_STAR
+            }
+            3 -> {
+                strategy = Strategy.P2P_CLUSTER
+            }
+            else -> {
+                readableStrategy = -1
+                isValidStrategy = false
+                return
+            }
+        }
+        readableStrategy = index
+        isValidStrategy = true
+    }
+
+    override fun onNothingSelected(p0: AdapterView<*>?) {
+        TODO("Not yet implemented")
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
+        Log.e(TAG,"onDestroyView")
         viewInstanceState = Bundle()
         viewInstanceState!!.putBoolean("isExperimentRunning", isExperimentRunning)
     }
@@ -213,19 +320,22 @@ class DashboardFragment : Fragment(), D2DListener {
     override fun onConnectivityChange(active: Boolean) {
         super.onConnectivityChange(active)
         setConnectedStatus(active)
-        if(!isExperimentRunning){
-            viewModel.instance?.stopDiscoveringOrAdvertising()
-        }
     }
 
     override fun onDeviceConnected(isActive: Boolean, endPointInfo: JSONObject) {
         super.onDeviceConnected(isActive, endPointInfo)
         if(isActive){
+            connectedDevices[endPointInfo.getString("endPointId")] = endPointInfo.getString("endPointName")
             targetEndDeviceId = endPointInfo.getString("endPointId")
-            targetDeviceId = endPointInfo.getString("endPointName")
         }else {
+            connectedDevices.remove(endPointInfo.getString("endPointId"))
             targetEndDeviceId = null
         }
+        val auxList = mutableListOf<List<String>>()
+        connectedDevices.entries.forEach {
+            auxList.add(mutableListOf(it.key, it.value))
+        }
+        viewModel.connectedDevices.value = auxList
     }
 
     override fun onExperimentProgress(isExperimentBar: Boolean, progression: Int) {
@@ -314,15 +424,36 @@ class DashboardFragment : Fragment(), D2DListener {
     override fun onReceivedTaskResul(from: D2D.ParameterTag, value: JSONObject) {
         super.onReceivedTaskResul(from, value)
         when(from){
+            D2D.ParameterTag.FILE->{
+                if(value.getString("experimentState") == "running"){
+                    val experimentValueParameters = value.getJSONObject("experimentValueParameters")
+                    viewModel.insertFileExperiments(
+                        DataFileExperiments(0,
+                            experimentValueParameters.getLong("experimentId"),
+                            experimentValueParameters.getString("experimentName"),
+                            viewModel.deviceId!!,
+                            experimentValueParameters.getString("targetId"),
+                            experimentValueParameters.getInt("repetition"),
+                            experimentValueParameters.getLong("bytesTransferred"),
+                            experimentValueParameters.getLong("bytesToTransfer"),
+                            experimentValueParameters.getLong("timing"),
+                            experimentValueParameters.getBoolean("uploading"),
+                            readableStrategy
+                        )
+                    )
+                }
+                if(value.getString("experimentState") == "finished"){
+                    resetToStandbyStatus()
+                }
+            }
             D2D.ParameterTag.DISCOVERY ->{
-                Log.i(TAG, "onReceivedTaskResul: $value")
                 if(value.getString("experimentState") == "running"){
                     val experimentValueParameters = value.getJSONObject("experimentValueParameters")
                     viewModel.insertDataConnectionAttempts(
                         DataConnectionAttempts(0,
                             experimentId,
                             viewModel.deviceId!!,
-                            targetDeviceId!!,
+                            experimentValueParameters.getString("targetId"),
                             experimentValueParameters.getInt("totalNumberOfAttempts"),
                             experimentValueParameters.getBoolean("isLowPower"),
                             experimentValueParameters.getInt("attempt"),
@@ -362,9 +493,11 @@ class DashboardFragment : Fragment(), D2DListener {
 
     private fun stopExperiment(){
         isExperimentRunning = false
-        initD2D.isEnabled = true
         startExperiment.isEnabled = false
-        stopExperiment.isEnabled = false
+        if(viewModel.instance?.isDiscovering() == false){
+            stopExperiment.isEnabled = false
+            initD2D.isEnabled = true
+        }
     }
 
     private fun resetToStandbyStatus(){

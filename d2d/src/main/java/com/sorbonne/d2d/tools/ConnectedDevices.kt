@@ -33,6 +33,18 @@ class ConnectedDevices {
         return connectedDevices.entries
     }
 
+    fun getDeviceName(endPointId: String): String?{
+        return connectedDevices[endPointId]?.getString("deviceName")
+    }
+
+    fun getDeviceNamesByIds(endPointIds: List<String>): List<String>{
+        val deviceNames = mutableListOf<String>()
+        for (endPoint in endPointIds){
+            connectedDevices[endPoint]?.getString("deviceName")?.let { deviceNames.add(it) }
+        }
+        return deviceNames
+    }
+
     fun getEndPointIds(): MutableSet<String> {
         return connectedDevices.keys
     }

@@ -5,12 +5,19 @@ import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Build
 import android.os.Bundle
-import android.text.InputFilter
 import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.Adapter
 import com.sorbonne.atom_d.R
+import com.sorbonne.atom_d.adapters.EntityType
+import com.sorbonne.atom_d.adapters.double_column.EntityAdapterDoubleColumn
+import com.sorbonne.atom_d.view_holders.DoubleColumnViewHolder
 
 
 class MyAlertDialog: DialogFragment() {
@@ -22,10 +29,13 @@ class MyAlertDialog: DialogFragment() {
         ALERT_ACCEPT_CANCEL,
         ALERT_OPTION,
         ALERT_ON_HOLD,
-        ALERT_INPUT_TEXT
+        ALERT_INPUT_TEXT,
+        ALERT_INPUT_RECYCLE_VIEW
     }
 
     companion object {
+        private var adapterDoubleColumn:EntityAdapterDoubleColumn ?= null
+
         private var option1: ((Any?) -> Unit?)? = null
         private var option2: (() -> Unit?)? = null
 
@@ -40,7 +50,8 @@ class MyAlertDialog: DialogFragment() {
         private fun newInstance(type: MessageType, iconId: Int, title: String,
                                 message: String?, viewId: Int, isCancelable: Boolean,
                                 option1: ((Any?) -> Unit?)?, option2: (() -> Unit?)?,
-                                option1Text:String?, option2Text:String?, filter: String?
+                                option1Text:String?, option2Text:String?, filter: String?,
+                                adapterDoubleColumn: EntityAdapterDoubleColumn?
         ): MyAlertDialog{
             val dialog = MyAlertDialog()
             val args = Bundle()
@@ -54,7 +65,7 @@ class MyAlertDialog: DialogFragment() {
             args.putSerializable("messageType", type)
             args.putString("filter", filter)
             dialog.arguments = args
-
+            this.adapterDoubleColumn = adapterDoubleColumn
             setOption1(option1)
             setOption2(option2)
 
@@ -65,12 +76,14 @@ class MyAlertDialog: DialogFragment() {
             manager: FragmentManager, tag: String, type: MessageType, iconId: Int, title: String,
             message: String? = null, view: Int = -1, isCancelable: Boolean = false,
             option1: ((Any?) -> Unit?)? = null, option2: (() -> Unit?)? = null,
-            option1Text:String? = null, option2Text:String? = null, filter: String? = null
+            option1Text:String? = null, option2Text:String? = null, filter: String? = null,
+            adapterDoubleColumn: EntityAdapterDoubleColumn? = null
         ): DialogFragment {
             val newFragment: DialogFragment =
                 newInstance(
                     type, iconId, title, message, view, isCancelable,
-                    option1, option2, option1Text, option2Text, filter
+                    option1, option2, option1Text, option2Text, filter,
+                    adapterDoubleColumn
                 )
             newFragment.show(manager, tag)
             return newFragment
@@ -122,7 +135,7 @@ class MyAlertDialog: DialogFragment() {
         val myView = inflater.inflate(R.layout.dialog_text_input, null)
         if(filter == "Ipv4"){
             val input: EditText  = myView.findViewById(R.id.text_input)
-            input.filters = arrayOf(IpV4Filter())
+            // TODO Filters
         }
         val alertDialog = AlertDialog.Builder(activity)
             .setTitle(title)
@@ -137,6 +150,29 @@ class MyAlertDialog: DialogFragment() {
                 DialogInterface.OnClickListener { dialog, id ->
                     getDialog()?.cancel()
                 })
+        return alertDialog.create()
+    }
+
+    private fun optionRecycleView(title: String?, iconId: Int): AlertDialog {
+        val inflater = requireActivity().layoutInflater
+        val myView = inflater.inflate(R.layout.dialog_recycleview ,null)
+
+        CustomRecyclerView(
+            requireContext(),
+            myView.findViewById(R.id.input_list),
+            adapterDoubleColumn!!,
+            CustomRecyclerView.CustomLayoutManager.LINEAR_LAYOUT
+        ).getRecyclerView()
+
+        val alertDialog = AlertDialog.Builder(activity)
+            .setTitle(title)
+            .setIcon(iconId)
+            .setView(myView)
+            .setNeutralButton(android.R.string.ok) { dialog, which ->
+                option1?.let {
+                    it(adapterDoubleColumn)
+                }
+            }
         return alertDialog.create()
     }
 
@@ -186,8 +222,11 @@ class MyAlertDialog: DialogFragment() {
             MessageType.ALERT_OPTION -> {
                 newAlertDialog = optionMessage(title, message, viewId, iconId, option1Text, option2Text)
             }
-            MessageType.ALERT_INPUT_TEXT ->{
+            MessageType.ALERT_INPUT_TEXT -> {
                 newAlertDialog = optionInputMessage(title, iconId, filter)
+            }
+            MessageType.ALERT_INPUT_RECYCLE_VIEW -> {
+                newAlertDialog = optionRecycleView(title,iconId)
             }
             else -> {
                throw  java.lang.IllegalStateException("unknown alertDialog type")
@@ -197,4 +236,24 @@ class MyAlertDialog: DialogFragment() {
         newAlertDialog.setCanceledOnTouchOutside(isCancelable)
         return newAlertDialog
     }
+
+//    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+//        val messageType = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+//            requireArguments().getSerializable("messageType", MessageType::class.java)!!
+//        }else{
+//            requireArguments().getSerializable("messageType")!!
+//        }
+//        return if(messageType == MessageType.ALERT_INPUT_RECYCLE_VIEW){
+//            val view = inflater.inflate(R.layout.dialog_recycleview ,container,false)
+//            CustomRecyclerView(
+//                requireContext(),
+//                view.findViewById(R.id.input_list),
+//                adapterDoubleColumn!!,
+//                CustomRecyclerView.CustomLayoutManager.LINEAR_LAYOUT
+//            ).getRecyclerView()
+//            view
+//        } else {
+//            super.onCreateView(inflater, container, savedInstanceState)
+//        }
+//    }
 }

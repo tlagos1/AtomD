@@ -10,12 +10,15 @@ import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttemptsDao
 import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
 import com.sorbonne.atom_d.entities.data_connection_attempts.DataConnectionAttempts
 import com.sorbonne.atom_d.entities.data_connection_attempts.DataConnectionAttemptsDao
+import com.sorbonne.atom_d.entities.data_file_experiments.DataFileExperiments
+import com.sorbonne.atom_d.entities.data_file_experiments.DataFileExperimentsDao
 import com.sorbonne.atom_d.entities.file_experiments.FileExperiments
 import com.sorbonne.atom_d.entities.file_experiments.FileExperimentsDao
 
 @Database(entities = [
     ChunkExperiments::class,
     FileExperiments::class,
+    DataFileExperiments::class,
     ConnectionAttempts::class,
     DataConnectionAttempts::class
 ], version = 1)
@@ -27,6 +30,7 @@ abstract class RoomDatabase: androidx.room.RoomDatabase() {
     abstract fun connectionAttemptsDao(): ConnectionAttemptsDao
     abstract fun customQueriesDao(): CustomQueriesDao
 
+    abstract fun dataFileExperimentsDao(): DataFileExperimentsDao
     abstract fun dataConnectionAttemptsDao(): DataConnectionAttemptsDao
 
     companion object {

@@ -9,6 +9,8 @@ import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttemptsDao
 import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
 import com.sorbonne.atom_d.entities.data_connection_attempts.DataConnectionAttempts
 import com.sorbonne.atom_d.entities.data_connection_attempts.DataConnectionAttemptsDao
+import com.sorbonne.atom_d.entities.data_file_experiments.DataFileExperiments
+import com.sorbonne.atom_d.entities.data_file_experiments.DataFileExperimentsDao
 import com.sorbonne.atom_d.entities.file_experiments.FileExperiments
 import com.sorbonne.atom_d.entities.file_experiments.FileExperimentsDao
 
@@ -19,6 +21,7 @@ class DatabaseRepository(application: Application){
     private var connectionAttemptsDao: ConnectionAttemptsDao
     private var customQueriesDao: CustomQueriesDao
 
+    private var dataFileExperimentsDao: DataFileExperimentsDao
     private var dataConnectionAttemptsDao: DataConnectionAttemptsDao
 
     init {
@@ -29,6 +32,7 @@ class DatabaseRepository(application: Application){
         connectionAttemptsDao = db.connectionAttemptsDao()
         customQueriesDao = db.customQueriesDao()
 
+        dataFileExperimentsDao = db.dataFileExperimentsDao()
         dataConnectionAttemptsDao = db.dataConnectionAttemptsDao()
     }
 
@@ -98,6 +102,16 @@ class DatabaseRepository(application: Application){
 
     fun getAllExperimentsName(): LiveData<List<CustomQueriesDao.AllExperimentsName>> {
         return customQueriesDao.getAllExperimentsName()
+    }
+
+    /*
+     * =========================================================================
+     * dataConnectionAttempts
+     * =========================================================================
+     */
+
+    suspend fun insertDataFileExperiments(dataFileExperiments: DataFileExperiments){
+        dataFileExperimentsDao.insert(dataFileExperiments)
     }
 
     /*

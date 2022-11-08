@@ -8,8 +8,8 @@ import org.json.JSONObject
 
 class D2DViewModel: ViewModel() {
 
-    val isDiscoveryActive: MutableLiveData<Boolean> = MutableLiveData(false)
-    val isConnected: MutableLiveData<Boolean> = MutableLiveData(false)
+    val isDiscoveryActive: MutableLiveData<Boolean> = MutableLiveData()
+    val isConnected: MutableLiveData<Boolean> = MutableLiveData()
 
     val foundDevice: MutableLiveData<JSONObject> = MutableLiveData()
     val lostDevice: MutableLiveData<JSONObject> = MutableLiveData()
@@ -20,6 +20,7 @@ class D2DViewModel: ViewModel() {
     val experimentProgress: MutableLiveData<Int> = MutableLiveData()
     val taskProgress: MutableLiveData<Int> = MutableLiveData()
 
+    val fileTransferTaskValue: MutableLiveData<JSONObject> = MutableLiveData()
     val discoveryTaskValue: MutableLiveData<JSONObject> = MutableLiveData()
     val infoPacket: MutableLiveData<MutableMap<Byte, List<String>>> = MutableLiveData()
 

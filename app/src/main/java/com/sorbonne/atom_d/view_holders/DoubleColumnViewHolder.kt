@@ -3,6 +3,7 @@ package com.sorbonne.atom_d.view_holders
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
 import android.widget.RadioButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -13,27 +14,33 @@ class DoubleColumnViewHolder(itemView: View, type: DoubleColumnType): RecyclerVi
 
     enum class DoubleColumnType{
         TextViewTextView,
-        RadioButtonTextView
+        RadioButtonTextView,
+        CheckBoxTextView
     }
 
-    private var textViewData: TextView
+    private lateinit var textViewData: TextView
     private lateinit var secondTextViewData: TextView
     private lateinit var radioData: RadioButton
+    private lateinit var checkBoxData: CheckBox
 
     init {
         when(type){
-            DoubleColumnType.TextViewTextView ->{
+            DoubleColumnType.TextViewTextView -> {
                 textViewData = itemView.findViewById(R.id.Data_TextView)
                 secondTextViewData = itemView.findViewById(R.id.Second_Data_TextView)
             }
-            DoubleColumnType.RadioButtonTextView ->{
+            DoubleColumnType.RadioButtonTextView -> {
                 radioData = itemView.findViewById(R.id.Data_Radio)
+                textViewData = itemView.findViewById(R.id.Data_TextView)
+            }
+            DoubleColumnType.CheckBoxTextView -> {
+                checkBoxData = itemView.findViewById(R.id.Data_checkBox)
                 textViewData = itemView.findViewById(R.id.Data_TextView)
             }
         }
     }
 
-    fun bind(data: Any, data2: Any, type: DoubleColumnType, isChecked: Boolean = false){
+    fun bind(data: Any?, data2: Any?, type: DoubleColumnType, isChecked: Boolean = false){
         when(type){
             DoubleColumnType.TextViewTextView -> {
                 textViewData.text = data as String
@@ -44,8 +51,14 @@ class DoubleColumnViewHolder(itemView: View, type: DoubleColumnType): RecyclerVi
                 radioData.text = data as String
                 textViewData.text = data2 as String
             }
+            DoubleColumnType.CheckBoxTextView -> {
+                checkBoxData.isChecked = isChecked
+                checkBoxData.text = data as String
+                textViewData.text = data2 as String
+            }
         }
     }
+
 
     companion object {
         fun create(parent: ViewGroup, type: DoubleColumnType): DoubleColumnViewHolder {
@@ -56,6 +69,9 @@ class DoubleColumnViewHolder(itemView: View, type: DoubleColumnType): RecyclerVi
                 DoubleColumnType.RadioButtonTextView ->
                     LayoutInflater.from(parent.context)
                         .inflate(R.layout.radiobutton_textview_column, parent, false)
+                DoubleColumnType.CheckBoxTextView ->
+                    LayoutInflater.from(parent.context)
+                        .inflate(R.layout.checkbox_textview_column, parent, false)
             }
             return DoubleColumnViewHolder(view, type)
         }
