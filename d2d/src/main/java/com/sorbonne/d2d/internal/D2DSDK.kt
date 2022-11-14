@@ -254,10 +254,11 @@ class D2DSDK {
     }
 
     private val connectionLifecycleCallback = object :ConnectionLifecycleCallback(){
-        private var endDeviceName = ""
+        private var endDeviceName = mutableMapOf<String, String>()
 
         override fun onConnectionInitiated(endPointId: String, connectionInfo: ConnectionInfo) {
             isAdvertiser = connectionInfo.isIncomingConnection
+            endDeviceName[endPointId] = connectionInfo.endpointName
             if(isDiscoveryExperiment){
                 val stateTiming = System.nanoTime()
                 viewModel.discoveryTaskValue.value = taskValue(
@@ -285,8 +286,10 @@ class D2DSDK {
                         )
                     }
                 }
+                it.addOnFailureListener {
+                    connectionClient?.disconnectFromEndpoint(endPointId)
+                }
             }
-            endDeviceName = connectionInfo.endpointName
         }
 
         override fun onConnectionResult(endPointId: String, connectionResolution: ConnectionResolution) {
@@ -312,13 +315,15 @@ class D2DSDK {
                         discoveryRepetitions -= 1
                         viewModel.experimentProgress.value = (((totalNumberOfTask-discoveryRepetitions).toDouble()/totalNumberOfTask)*100).toInt()
                         if(discoveryRepetitions == 0){
-                            targetDevice = null
-                            viewModel.connectedDevices.value =
-                                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$endDeviceName\"}")
-                            viewModel.discoveryTaskValue.value = taskValue(
-                                "finished",
-                                notificationParametersForCompletedExperiment("discovery")
-                            )
+                            endDeviceName[endPointId]?.let { mDeviceName ->
+                                targetDevice = null
+                                viewModel.connectedDevices.value =
+                                    JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$mDeviceName\"}")
+                                viewModel.discoveryTaskValue.value = taskValue(
+                                    "finished",
+                                    notificationParametersForCompletedExperiment("discovery")
+                                )
+                            }
                         }
                         else{
                             stopDiscoveringOrAdvertising()
@@ -328,13 +333,16 @@ class D2DSDK {
                         }
                     }
                     if(discoveryRepetitions == 0){
-                        Log.i(TAG, "connected with  $endPointId - $endDeviceName")
-                        viewModel.connectedDevices.value =
-                            JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$endDeviceName\"}")
-                        connectedDevices.addNewDevice(endPointId, endDeviceName)
+                        endDeviceName[endPointId]?.let { mDeviceName ->
+                            Log.i(TAG, "connected with  $endPointId - $mDeviceName")
+                            viewModel.connectedDevices.value =
+                                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$mDeviceName\"}")
+                            connectedDevices.addNewDevice(endPointId, mDeviceName)
+                        }
                     }
                 }
                 ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED -> {
+                    endDeviceName.remove(endPointId)
                 }
             }
         }
