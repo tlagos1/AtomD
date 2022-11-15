@@ -11,7 +11,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.sorbonne.atom_d.R
-import com.sorbonne.atom_d.adapters.EntityType
+import com.sorbonne.atom_d.adapters.AdapterType
 import com.sorbonne.atom_d.adapters.single_column.EntityAdapterSingleColumn
 import com.sorbonne.atom_d.entities.DatabaseRepository
 import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttempts
@@ -39,7 +39,7 @@ class ConnectionAttemptsFragment : Fragment()  {
         val customName = view.findViewById<CheckBox>(R.id.Discovery_Repetitions_Experiment_Custom_Name)
         val submitButton = view.findViewById<Button>(R.id.Discovery_Repetitions_submit_experiment)
 
-        val connectionAttemptsAdapter = EntityAdapterSingleColumn(SingleColumnViewHolder.SingleColumnType.TextView, EntityType.ConnectionAttempts)
+        val connectionAttemptsAdapter = EntityAdapterSingleColumn(SingleColumnViewHolder.SingleColumnType.TextView, AdapterType.ConnectionAttempts)
         CustomRecyclerView(
             requireContext(),
             view.findViewById(R.id.Discovery_Repetitions_Experiment_RecyclerView),

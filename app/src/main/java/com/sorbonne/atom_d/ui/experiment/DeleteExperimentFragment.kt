@@ -8,8 +8,8 @@ import android.widget.Button
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.sorbonne.atom_d.R
-import com.sorbonne.atom_d.adapters.EntityType
-import com.sorbonne.atom_d.adapters.double_column.EntityAdapterDoubleColumn
+import com.sorbonne.atom_d.adapters.AdapterType
+import com.sorbonne.atom_d.adapters.double_column.AdapterDoubleColumn
 import com.sorbonne.atom_d.entities.DatabaseRepository
 import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
 import com.sorbonne.atom_d.tools.CustomRecyclerView
@@ -34,7 +34,7 @@ class DeleteExperimentFragment : Fragment()  {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val deleteExperimentAdapter = EntityAdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView, EntityType.CustomQueries)
+        val deleteExperimentAdapter = AdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView, AdapterType.CustomQueries)
 
         CustomRecyclerView(
             requireContext(),

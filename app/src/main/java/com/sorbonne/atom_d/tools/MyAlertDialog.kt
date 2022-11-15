@@ -5,19 +5,11 @@ import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.EditText
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
-import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.RecyclerView.Adapter
 import com.sorbonne.atom_d.R
-import com.sorbonne.atom_d.adapters.EntityType
-import com.sorbonne.atom_d.adapters.double_column.EntityAdapterDoubleColumn
-import com.sorbonne.atom_d.view_holders.DoubleColumnViewHolder
+import com.sorbonne.atom_d.adapters.double_column.AdapterDoubleColumn
 
 
 class MyAlertDialog: DialogFragment() {
@@ -34,7 +26,7 @@ class MyAlertDialog: DialogFragment() {
     }
 
     companion object {
-        private var adapterDoubleColumn:EntityAdapterDoubleColumn ?= null
+        private var adapterDoubleColumn:AdapterDoubleColumn ?= null
 
         private var option1: ((Any?) -> Unit?)? = null
         private var option2: (() -> Unit?)? = null
@@ -51,7 +43,7 @@ class MyAlertDialog: DialogFragment() {
                                 message: String?, viewId: Int, isCancelable: Boolean,
                                 option1: ((Any?) -> Unit?)?, option2: (() -> Unit?)?,
                                 option1Text:String?, option2Text:String?, filter: String?,
-                                adapterDoubleColumn: EntityAdapterDoubleColumn?
+                                adapterDoubleColumn: AdapterDoubleColumn?
         ): MyAlertDialog{
             val dialog = MyAlertDialog()
             val args = Bundle()
@@ -77,7 +69,7 @@ class MyAlertDialog: DialogFragment() {
             message: String? = null, view: Int = -1, isCancelable: Boolean = false,
             option1: ((Any?) -> Unit?)? = null, option2: (() -> Unit?)? = null,
             option1Text:String? = null, option2Text:String? = null, filter: String? = null,
-            adapterDoubleColumn: EntityAdapterDoubleColumn? = null
+            adapterDoubleColumn: AdapterDoubleColumn? = null
         ): DialogFragment {
             val newFragment: DialogFragment =
                 newInstance(

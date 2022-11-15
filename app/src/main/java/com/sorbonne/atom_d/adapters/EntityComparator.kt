@@ -6,7 +6,7 @@ import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttempts
 import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
 import com.sorbonne.atom_d.entities.file_experiments.FileExperiments
 
-enum class EntityType {
+enum class AdapterType {
     ChunkExperiments,
     FileExperiments,
     ConnectionAttempts,
@@ -14,20 +14,20 @@ enum class EntityType {
     DynamicList
 }
 
-class EntityComparator(private val entityType: EntityType) : DiffUtil.ItemCallback<Any>() {
+class EntityComparator(private val adapterType: AdapterType) : DiffUtil.ItemCallback<Any>() {
     override fun areItemsTheSame(oldItem: Any, newItem: Any): Boolean {
         return oldItem === newItem
     }
 
     override fun areContentsTheSame(oldItem: Any, newItem: Any): Boolean {
-        return when(entityType){
-            EntityType.ChunkExperiments ->
+        return when(adapterType){
+            AdapterType.ChunkExperiments ->
                 (oldItem as ChunkExperiments).expName == (newItem as ChunkExperiments).expName
-            EntityType.FileExperiments ->
+            AdapterType.FileExperiments ->
                 (oldItem as FileExperiments).expName == (newItem as FileExperiments).expName
-            EntityType.ConnectionAttempts ->
+            AdapterType.ConnectionAttempts ->
                 (oldItem as ConnectionAttempts).expName == (newItem as ConnectionAttempts).expName
-            EntityType.CustomQueries ->
+            AdapterType.CustomQueries ->
                 (oldItem as CustomQueriesDao.AllExperimentsName).experiment_name == (newItem as CustomQueriesDao.AllExperimentsName).experiment_name
             else -> {
                 false

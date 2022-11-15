@@ -1,26 +1,24 @@
 package com.sorbonne.atom_d.adapters.double_column
 
 import android.annotation.SuppressLint
-import android.util.Log
 import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.RadioButton
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import com.sorbonne.atom_d.R
 import com.sorbonne.atom_d.adapters.EntityComparator
-import com.sorbonne.atom_d.adapters.EntityType
+import com.sorbonne.atom_d.adapters.AdapterType
 import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
 import com.sorbonne.atom_d.view_holders.DoubleColumnViewHolder
 
-class EntityAdapterDoubleColumn(
+class AdapterDoubleColumn(
         private val doubleColumnType: DoubleColumnViewHolder.DoubleColumnType,
-        private val entityType: EntityType
-    ): ListAdapter<Any, DoubleColumnViewHolder>(EntityComparator(entityType)) {
+        private val adapterType: AdapterType
+    ): ListAdapter<Any, DoubleColumnViewHolder>(EntityComparator(adapterType)) {
 
-    private var TAG = EntityAdapterDoubleColumn::class.simpleName
+    private var TAG = AdapterDoubleColumn::class.simpleName
 
-    private var lastCheckedPosition = -1
+    private var lastCheckedPosition = mutableMapOf<String, Int>()
     private val checkedBoxes = mutableListOf<String>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DoubleColumnViewHolder {
@@ -30,17 +28,20 @@ class EntityAdapterDoubleColumn(
     @SuppressLint("RecyclerView")
     override fun onBindViewHolder(holder: DoubleColumnViewHolder, position: Int) {
         val current = getItem(position)
-        when(entityType){
-            EntityType.CustomQueries ->{
+        when(adapterType){
+            AdapterType.CustomQueries ->{
                 current as CustomQueriesDao.AllExperimentsName
                 when(doubleColumnType){
                     DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView -> {
-                        holder.bind(current.experiment_name, current.type, doubleColumnType,position == lastCheckedPosition)
+                        holder.bind(current.experiment_name, current.type, doubleColumnType,position == lastCheckedPosition[adapterType.name])
                         val item: RadioButton = holder.itemView.findViewById(R.id.Data_Radio)
                         item.setOnClickListener{
-                            notifyItemChanged(lastCheckedPosition)
+                            lastCheckedPosition[adapterType.name]?.let { mLastCheckedPosition ->
+                                notifyItemChanged(mLastCheckedPosition)
+                            }
                             notifyItemChanged(position)
-                            lastCheckedPosition = position
+                            lastCheckedPosition[adapterType.name] = position
+
                         }
                     }
                     DoubleColumnViewHolder.DoubleColumnType.TextViewTextView -> {
@@ -51,9 +52,8 @@ class EntityAdapterDoubleColumn(
                     }
                 }
             }
-            EntityType.DynamicList -> {
+            AdapterType.DynamicList -> {
                 when(doubleColumnType) {
-
                     DoubleColumnViewHolder.DoubleColumnType.CheckBoxTextView -> {
                         current as List<*>
                         holder.bind(current[0], current[1], doubleColumnType, checkedBoxes.contains(current[0].toString()))
@@ -69,6 +69,19 @@ class EntityAdapterDoubleColumn(
                             }
                         }
                     }
+                    DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView -> {
+                        current as List<*>
+                        holder.bind(current[0], current[1], doubleColumnType, position == lastCheckedPosition[adapterType.name])
+                        val item: RadioButton = holder.itemView.findViewById(R.id.Data_Radio)
+                        item.setOnClickListener{
+                            lastCheckedPosition[adapterType.name]?.let { mLastCheckedPosition ->
+                                notifyItemChanged(mLastCheckedPosition)
+                            }
+                            notifyItemChanged(position)
+                            lastCheckedPosition[adapterType.name] = position
+
+                        }
+                    }
                     else -> {
                         TODO()
                     }
@@ -82,8 +95,8 @@ class EntityAdapterDoubleColumn(
 
     override fun onCurrentListChanged(previousList: MutableList<Any>, currentList: MutableList<Any>) {
         super.onCurrentListChanged(previousList, currentList)
-        when(entityType){
-            EntityType.DynamicList ->{
+        when(adapterType){
+            AdapterType.DynamicList ->{
                 val currentListIds = mutableListOf<String>()
                 currentList.forEach {
                     it as List<*>
@@ -104,7 +117,10 @@ class EntityAdapterDoubleColumn(
     }
 
     fun getLastCheckedPosition(): Int {
-        return lastCheckedPosition
+        lastCheckedPosition[adapterType.name]?.let {
+            return it
+        }
+        return -1
     }
     fun getCheckedBoxes(): List<String> {
         return checkedBoxes

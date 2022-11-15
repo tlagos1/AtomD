@@ -126,6 +126,17 @@ class MainActivity : AppCompatActivity(), D2DListener {
         }
     }
 
+    override fun onEndPointsDiscovered(isActive: Boolean, endPointInfo: JSONObject) {
+        super.onEndPointsDiscovered(isActive, endPointInfo)
+        navHostFragment.childFragmentManager.fragments.forEach{
+            try {
+                (it as? DashboardFragment)?.onEndPointsDiscovered(isActive, endPointInfo)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
     override fun onExperimentProgress(isExperimentBar: Boolean, progression: Int) {
         super.onExperimentProgress(isExperimentBar, progression)
         navHostFragment.childFragmentManager.fragments.forEach{

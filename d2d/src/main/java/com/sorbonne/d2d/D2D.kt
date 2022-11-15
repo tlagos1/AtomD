@@ -36,12 +36,16 @@ object D2D {
         }
     }
 
-    fun startDiscovery(strategy: Strategy, lowPower: Boolean){
-        instance.sdk?.startDiscovery(strategy, lowPower)
+    fun startDiscovery(strategy: Strategy, lowPower: Boolean, automaticRequest: Boolean = true){
+        instance.sdk?.startDiscovery(strategy, lowPower, automaticRequest = automaticRequest)
     }
 
     fun startAdvertising(deviceName: String, strategy: Strategy, lowPower: Boolean, connectionType: Int){
         instance.sdk?.startAdvertising(deviceName, strategy, lowPower, connectionType)
+    }
+
+    fun requestConnectionToEndPoint(endPointId: String){
+        instance.sdk?.requestConnectionToEndPoint(endPointId)
     }
 
     fun notifyToConnectedDevice(endPointId: String, tag: Byte, notificationParameters: JSONObject, afterCompleteTask:(()->Any?)? = null){

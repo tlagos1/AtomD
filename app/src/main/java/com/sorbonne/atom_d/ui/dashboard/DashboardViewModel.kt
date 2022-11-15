@@ -29,4 +29,8 @@ class DashboardViewModel(context: Context?, private val repository: DatabaseRepo
     val connectedDevices: MutableLiveData<List<List<String>>> by lazy {
         MutableLiveData<List<List<String>>>()
     }
+
+    val discoveredDevices: MutableLiveData<List<List<String>>> by lazy {
+        MutableLiveData<List<List<String>>>()
+    }
 }

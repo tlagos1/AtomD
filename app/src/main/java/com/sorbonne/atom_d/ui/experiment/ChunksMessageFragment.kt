@@ -8,7 +8,7 @@ import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.sorbonne.atom_d.R
-import com.sorbonne.atom_d.adapters.EntityType
+import com.sorbonne.atom_d.adapters.AdapterType
 import com.sorbonne.atom_d.adapters.single_column.EntityAdapterSingleColumn
 import com.sorbonne.atom_d.entities.DatabaseRepository
 import com.sorbonne.atom_d.entities.chunk_experiments.ChunkExperiments
@@ -38,7 +38,7 @@ class ChunksMessageFragment : Fragment()  {
         val customName = view.findViewById<CheckBox>(R.id.Message_Experiment_Custom_Name)
         val submitButton = view.findViewById<Button>(R.id.Message_Experiment_Submit)
 
-        val chunkExperimentsAdapter = EntityAdapterSingleColumn(SingleColumnViewHolder.SingleColumnType.TextView, EntityType.ChunkExperiments)
+        val chunkExperimentsAdapter = EntityAdapterSingleColumn(SingleColumnViewHolder.SingleColumnType.TextView, AdapterType.ChunkExperiments)
         CustomRecyclerView(
             requireContext(),
             view.findViewById(R.id.Message_Experiment_RecyclerView),

@@ -37,6 +37,7 @@ class D2DSDK {
 
     private var isDiscoveringAdvertising = false
     private var isAdvertiser = false
+    private var requireConnectionRequest = false
 
     private var fusedLocationProviderClient: FusedLocationProviderClient?= null
 
@@ -196,6 +197,7 @@ class D2DSDK {
     }
 
     private val endpointDiscoveryCallback = object : EndpointDiscoveryCallback(){
+        private val discoveredDeviceName = mutableMapOf<String,String>()
         override fun onEndpointFound(endPointId: String, discoveredEndpointInfo: DiscoveredEndpointInfo) {
             Log.i(TAG, "endPoint $endPointId - ${discoveredEndpointInfo.endpointName} discovered")
             if(targetDevice != null){
@@ -234,21 +236,28 @@ class D2DSDK {
                     }
                 }
             } else {
-                connectionClient?.requestConnection(
-                    deviceName,
-                    endPointId,
-                    connectionLifecycleCallback
-                )
+                discoveredDeviceName[endPointId] = discoveredEndpointInfo.endpointName
                 viewModel.foundDevice.value = JSONObject()
                     .put("endPointId", endPointId)
-                    .put("endPointName", discoveredEndpointInfo.endpointName)
+                    .put("endPointName", discoveredDeviceName[endPointId])
+
+                if (!requireConnectionRequest) {
+                    connectionClient?.requestConnection(
+                        deviceName,
+                        endPointId,
+                        connectionLifecycleCallback
+                    )
+                }
             }
         }
 
         override fun onEndpointLost(endPointId: String) {
             Log.i(TAG, "endPoint $endPointId lost")
-            viewModel.lostDevice.value = JSONObject()
-                .put("endPointId", endPointId)
+            discoveredDeviceName.remove(endPointId)?.let {
+                viewModel.lostDevice.value = JSONObject()
+                    .put("endPointId", endPointId)
+                    .put("endPointName", it)
+            }
         }
 
     }
@@ -406,11 +415,14 @@ class D2DSDK {
         }
     }
 
-    fun startDiscovery(strategy: Strategy, lowPower: Boolean){
+    fun startDiscovery(strategy: Strategy, lowPower: Boolean, automaticRequest: Boolean = true){
         if(isDiscoveringAdvertising){
             stopDiscoveringOrAdvertising()
             return
         }
+
+        requireConnectionRequest = !automaticRequest
+
         val discoveryOption = DiscoveryOptions.Builder()
             .setStrategy(strategy)
             .setLowPower(lowPower)
@@ -474,6 +486,14 @@ class D2DSDK {
                 }
             }
         }
+    }
+
+    fun requestConnectionToEndPoint(endPointId: String){
+        connectionClient?.requestConnection(
+            deviceName,
+            endPointId,
+            connectionLifecycleCallback
+        )
     }
 
     fun notifyToConnectedDevice(endPointId: String, tag: Byte, notificationParameters: JSONObject, afterCompleteTask:(()->Any?)?){

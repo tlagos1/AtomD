@@ -13,7 +13,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.sorbonne.atom_d.R
-import com.sorbonne.atom_d.adapters.EntityType
+import com.sorbonne.atom_d.adapters.AdapterType
 import com.sorbonne.atom_d.adapters.single_column.EntityAdapterSingleColumn
 import com.sorbonne.atom_d.entities.DatabaseRepository
 import com.sorbonne.atom_d.entities.file_experiments.FileExperiments
@@ -48,7 +48,7 @@ class FileParametersFragment : Fragment()  {
         val customName = view.findViewById<CheckBox>(R.id.File_Experiment_Custom_Name)
         val submitButton = view.findViewById<Button>(R.id.File_Experiment_Submit)
 
-        val fileExperimentsAdapter = EntityAdapterSingleColumn(SingleColumnViewHolder.SingleColumnType.TextView, EntityType.FileExperiments)
+        val fileExperimentsAdapter = EntityAdapterSingleColumn(SingleColumnViewHolder.SingleColumnType.TextView, AdapterType.FileExperiments)
         CustomRecyclerView(
             requireContext(),
             view.findViewById(R.id.File_Experiment_RecyclerView),

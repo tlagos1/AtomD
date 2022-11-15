@@ -18,8 +18,8 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.chip.Chip
 import com.sorbonne.atom_d.MainActivity
 import com.sorbonne.atom_d.R
-import com.sorbonne.atom_d.adapters.EntityType
-import com.sorbonne.atom_d.adapters.double_column.EntityAdapterDoubleColumn
+import com.sorbonne.atom_d.adapters.AdapterType
+import com.sorbonne.atom_d.adapters.double_column.AdapterDoubleColumn
 import com.sorbonne.atom_d.entities.DatabaseRepository
 import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttempts
 import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
@@ -29,7 +29,6 @@ import com.sorbonne.atom_d.guard
 import com.sorbonne.atom_d.tools.CustomRecyclerView
 import com.sorbonne.atom_d.tools.MessageTag
 import com.sorbonne.atom_d.tools.MyAlertDialog
-import com.sorbonne.atom_d.ui.experiment.ExperimentFragmentDirections
 import com.sorbonne.atom_d.ui.experiment.ExperimentViewModel
 import com.sorbonne.atom_d.ui.experiment.ExperimentViewModelFactory
 import com.sorbonne.atom_d.view_holders.DoubleColumnViewHolder
@@ -79,8 +78,10 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
     private var isValidStrategy = false
     private var isValidRole = false
 
-    private val adapterConnectedDevices = EntityAdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.CheckBoxTextView, EntityType.DynamicList)
+    private val adapterConnectedDevices = AdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.CheckBoxTextView, AdapterType.DynamicList)
+    private val adapterDiscoveredDevices = AdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView, AdapterType.DynamicList)
     private val connectedDevices = mutableMapOf<String, String>()
+    private val discoveredDevices = mutableMapOf<String,String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.e(TAG, "onCreate")
@@ -90,6 +91,7 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
         viewModel.deviceId = (context as? MainActivity).guard { return }.androidId
 
         viewModel.connectedDevices.observe(requireActivity(), adapterConnectedDevices::submitList )
+        viewModel.discoveredDevices.observe(requireActivity(), adapterDiscoveredDevices::submitList)
     }
 
     override fun onCreateView(
@@ -129,7 +131,7 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
         d2dStrategies.onItemSelectedListener = this
 
 
-        val dashboardAdapter = EntityAdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView, EntityType.CustomQueries)
+        val dashboardAdapter = AdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView, AdapterType.CustomQueries)
         CustomRecyclerView(
             requireContext(),
             view.findViewById(R.id.dashboard_recyclerView),
@@ -138,20 +140,45 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
         ).getRecyclerView()
         experimentViewModel.getAllExperimentsName().observe(requireActivity(), dashboardAdapter::submitList)
 
-
         discoveryState = view.findViewById(R.id.dashboard_status_discovering)
         connectionState = view.findViewById(R.id.dashboard_status_connected)
 
         deviceId.text = viewModel.deviceId.toString()
 
-        initD2D.setOnClickListener{
+        initD2D.setOnClickListener {
             if(isValidStrategy && strategy != Strategy.P2P_CLUSTER) {
                 if (selectedRole.checkedButtonId == R.id.dashboard_role_disc || selectedRole.checkedButtonId == R.id.dashboard_role_adv) {
                     it.isEnabled = false
                     stopExperiment.isEnabled = true
 
-                    if (selectedRole.checkedButtonId == R.id.dashboard_role_disc) {
-                        viewModel.instance?.startDiscovery(strategy!!, false)
+                    if(selectedRole.checkedButtonId == R.id.dashboard_role_disc) {
+
+                        if(strategy == Strategy.P2P_POINT_TO_POINT) {
+                            viewModel.instance?.startDiscovery(strategy!!, false, automaticRequest = false)
+                            MyAlertDialog.showDialog(
+                                parentFragmentManager,
+                                TAG!!,
+                                MyAlertDialog.MessageType.ALERT_INPUT_RECYCLE_VIEW,
+                                R.drawable.ic_alert_dialog_info_24,
+                                "Discovered Devices",
+                                null,
+                                R.layout.dialog_recycleview,
+                                adapterDoubleColumn = adapterDiscoveredDevices,
+                                option1 = fun (recycleViewAdapter){
+                                    recycleViewAdapter as AdapterDoubleColumn
+                                    if(recycleViewAdapter.getLastCheckedPosition() >= 0){
+                                        if(recycleViewAdapter.currentList.size > recycleViewAdapter.getLastCheckedPosition()){
+                                            val mEndPointInfo = (recycleViewAdapter.currentList[recycleViewAdapter.getLastCheckedPosition()]) as List<*>
+                                            viewModel.instance?.requestConnectionToEndPoint(mEndPointInfo[1].toString())
+                                            return
+                                        }
+                                    }
+                                    viewModel.instance?.stopAll()
+                                }
+                            )
+                        } else if (strategy == Strategy.P2P_STAR){
+                            viewModel.instance?.startDiscovery(strategy!!, false)
+                        }
                     } else {
                         viewModel.deviceId?.let { deviceName ->
                             viewModel.instance?.startAdvertising(
@@ -215,7 +242,7 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
                             R.layout.dialog_recycleview,
                             adapterDoubleColumn = adapterConnectedDevices,
                             option1 = fun (recycleViewAdapter){
-                                recycleViewAdapter as EntityAdapterDoubleColumn
+                                recycleViewAdapter as AdapterDoubleColumn
                                 if(recycleViewAdapter.getCheckedBoxes().isEmpty()){
                                     it.isEnabled = true
                                     return
@@ -315,11 +342,21 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
     override fun onDiscoveryChange(active: Boolean) {
         super.onDiscoveryChange(active)
         setDiscoveringStatus(active)
+        if(!active){
+            discoveredDevices.clear()
+            val auxList = mutableListOf<List<String>>()
+            viewModel.discoveredDevices.value = auxList
+        }
     }
 
     override fun onConnectivityChange(active: Boolean) {
         super.onConnectivityChange(active)
         setConnectedStatus(active)
+        if(active){
+            if(strategy == Strategy.P2P_POINT_TO_POINT){
+                viewModel.instance?.stopDiscoveringOrAdvertising()
+            }
+        }
     }
 
     override fun onDeviceConnected(isActive: Boolean, endPointInfo: JSONObject) {
@@ -336,6 +373,30 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
             auxList.add(mutableListOf(it.key, it.value))
         }
         viewModel.connectedDevices.value = auxList
+    }
+
+    override fun onEndPointsDiscovered(isActive: Boolean, endPointInfo: JSONObject) {
+        super.onEndPointsDiscovered(isActive, endPointInfo)
+        if(isActive){
+            var mEndPointId:String? = null
+            discoveredDevices.entries.forEach { (endPointId, endPointName) ->
+                if(endPointInfo.getString("endPointName") == endPointName){
+                    mEndPointId = endPointId
+                    return@forEach
+                }
+            }
+            mEndPointId?.let{
+                discoveredDevices.remove(it)
+            }
+            discoveredDevices[endPointInfo.getString("endPointId")] = endPointInfo.getString("endPointName")
+        } else {
+            discoveredDevices.remove(endPointInfo.getString("endPointId"))
+        }
+        val auxList = mutableListOf<List<String>>()
+        discoveredDevices.entries.forEach {
+            auxList.add(mutableListOf(it.value, it.key))
+        }
+        viewModel.discoveredDevices.value = auxList
     }
 
     override fun onExperimentProgress(isExperimentBar: Boolean, progression: Int) {
