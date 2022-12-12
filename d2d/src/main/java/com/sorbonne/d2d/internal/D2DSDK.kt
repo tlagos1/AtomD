@@ -105,6 +105,7 @@ class D2DSDK {
                                 viewModel.infoPacket.value = infoPacket
                             }
                             if(messageBytes.type == MessageBytes.INFO_FILE){
+
                                 isUploader = false
                                 val fileInfo = JSONObject(translatedPayload)
                                 Log.i(TAG, translatedPayload)
@@ -114,7 +115,7 @@ class D2DSDK {
                                 listOfFilesIds.add(fileInfo.getLong("payloadId"))
                                 totalNumberOfTask = fileInfo.getInt("totalNumberOfTask")
 
-                                totalNumberOfTargetDevices = 1
+
                             }
                         }
                         Payload.Type.FILE -> {
@@ -136,6 +137,7 @@ class D2DSDK {
 //                        )
 //                    }
                     if(listOfFilesIds.contains(payloadTransferUpdate.payloadId)) {
+                        val uploadingDownloadingTiming = System.nanoTime()
                         if(!numberOfFileRepetitions.containsKey(endPointId)){
                             numberOfFileRepetitions[endPointId] = 0
                         }
@@ -149,7 +151,7 @@ class D2DSDK {
                                     .put("repetition", numberOfFileRepetitions[endPointId])
                                     .put("bytesTransferred", payloadTransferUpdate.bytesTransferred)
                                     .put("bytesToTransfer", payloadTransferUpdate.totalBytes)
-                                    .put("timing", System.nanoTime())
+                                    .put("timing", uploadingDownloadingTiming)
                                     .put("uploading", isUploader)
                             )
                             viewModel.taskProgress.value = ((payloadTransferUpdate.bytesTransferred.toDouble()/payloadTransferUpdate.totalBytes)*100).toInt()
@@ -357,6 +359,9 @@ class D2DSDK {
         }
 
         override fun onDisconnected(endPointId: String) {
+            numberOfFileRepetitions.clear()
+            listOfFilesIds.clear()
+
             viewModel.disconnectedDevices.value =
                 JSONObject("{\"endPointId\": \"$endPointId\", \"endPointParameters\": ${connectedDevices.getDeviceParameters(endPointId)}}")
             connectedDevices.removeDevice(endPointId)
@@ -517,6 +522,7 @@ class D2DSDK {
             }
         }
     }
+
     fun notifyToSetOfConnectedDevices(setOfDevices: List<String>, tag: Byte, messageType: Byte, notificationParameters: JSONObject, afterCompleteTask:(()->Any?)?){
         val messageBytes = MessageBytes()
         messageBytes.buildRegularPacket(
@@ -589,9 +595,10 @@ class D2DSDK {
     }
 
     private fun sendFileToSetOfDevices(setOfDevices: List<String>, tag: Byte, file: File, fileInfo: JSONObject, afterCompleteTask:(()->Any?)?){
-        isUploader = true
+
         val payload = Payload.fromFile(file)
         listOfFilesIds.add(payload.id)
+
         totalNumberOfTargetDevices = setOfDevices.size
         notifyToSetOfConnectedDevices(setOfDevices, tag, MessageBytes.INFO_FILE,fileInfo.put("payloadId", payload.id)) {
             connectionClient?.let {
@@ -641,6 +648,9 @@ class D2DSDK {
         this.experimentName = experimentName
         this.totalNumberOfTask = repetitions
         this.isFileExperiment = true
+
+        this.isUploader = true
+        this.listOfFilesIds.clear()
         this.numberOfFileRepetitions.clear()
 
         for (i in  0 until repetitions){
@@ -712,6 +722,9 @@ class D2DSDK {
                 Log.i(TAG, "disconnected from  $endPointId")
             }
             connectedDevices.clear()
+
+            numberOfFileRepetitions.clear()
+            listOfFilesIds.clear()
         }
     }
 

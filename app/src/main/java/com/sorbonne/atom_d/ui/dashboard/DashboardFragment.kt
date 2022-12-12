@@ -25,6 +25,7 @@ import com.sorbonne.atom_d.entities.connections_attempts.ConnectionAttempts
 import com.sorbonne.atom_d.entities.custom_queries.CustomQueriesDao
 import com.sorbonne.atom_d.entities.data_connection_attempts.DataConnectionAttempts
 import com.sorbonne.atom_d.entities.data_file_experiments.DataFileExperiments
+import com.sorbonne.atom_d.entities.file_experiments.FileExperiments
 import com.sorbonne.atom_d.guard
 import com.sorbonne.atom_d.tools.CustomRecyclerView
 import com.sorbonne.atom_d.tools.MessageTag
@@ -34,6 +35,7 @@ import com.sorbonne.atom_d.ui.experiment.ExperimentViewModelFactory
 import com.sorbonne.atom_d.view_holders.DoubleColumnViewHolder
 import com.sorbonne.d2d.D2D
 import com.sorbonne.d2d.D2DListener
+import com.sorbonne.d2d.tools.MessageBytes
 import org.json.JSONObject
 import java.io.File
 import java.io.RandomAccessFile
@@ -253,13 +255,26 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
                                 raf.setLength(selectedExperiment.size)
                                 raf.close()
 
-                                viewModel.instance?.performFileExperiment(
-                                    recycleViewAdapter.getCheckedBoxes(),
-                                    MessageTag.D2D_PERFORMANCE,
-                                    selectedExperiment.experiment_name,
-                                    selectedExperiment.attempts,
-                                    testFile
-                                )
+                                viewModel.instance?.apply {
+                                    notifyToSetOfConnectedDevices(
+                                        recycleViewAdapter.getCheckedBoxes(),
+                                        MessageTag.D2D_PERFORMANCE,
+                                        MessageBytes.INFO_PACKET,
+                                        JSONObject()
+                                            .put("experimentType","file")
+                                            .put("experimentName", selectedExperiment.experiment_name)
+                                            .put("fileSize", selectedExperiment.size)
+                                            .put("fileTries", selectedExperiment.attempts)
+                                    ){
+                                        performFileExperiment(
+                                            recycleViewAdapter.getCheckedBoxes(),
+                                            MessageTag.D2D_PERFORMANCE,
+                                            selectedExperiment.experiment_name,
+                                            selectedExperiment.attempts,
+                                            testFile
+                                        )
+                                    }
+                                }
                             }
                         )
 //                        viewModel.instance?.performFileExperiment()
@@ -478,6 +493,16 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
                         }
                     }
                 }
+            }
+            "file" -> {
+                experimentViewModel.insertFileExperiment(
+                    FileExperiments(
+                        0,
+                        payloadParameters.getString("experimentName"),
+                        payloadParameters.getLong("fileSize"),
+                        payloadParameters.getInt("fileTries"),
+                    )
+                )
             }
         }
     }
