@@ -22,6 +22,10 @@ class ExperimentFragment : Fragment() {
         fun newInstance() = ExperimentFragment()
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+
     private val viewModel: ExperimentViewModel by viewModels {
         ExperimentViewModelFactory(DatabaseRepository(requireActivity().application))
     }

@@ -22,6 +22,7 @@ class ChunksMessageFragment : Fragment()  {
         ExperimentViewModelFactory(DatabaseRepository(requireActivity().application))
     }
 
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
