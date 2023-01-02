@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
@@ -13,7 +14,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_weight="0.5">
+            android:layout_weight="0.3">
 
             <CheckBox
                 android:id="@+id/Data_checkBox"
@@ -29,7 +30,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:layout_weight="0.5"
+            android:layout_weight="0.3"
             android:gravity="center">
 
             <TextView
@@ -39,6 +40,20 @@
                 android:layout_gravity="right"
                 android:layout_margin="10dp"
                 android:text="Data_TextView" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="0.4"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <ImageView
+                android:id="@+id/checkbox_bandwidth_quality"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@drawable/ic_baseline_circle_24" />
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>

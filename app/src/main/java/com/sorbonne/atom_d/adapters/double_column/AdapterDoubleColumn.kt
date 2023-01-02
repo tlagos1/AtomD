@@ -1,6 +1,7 @@
 package com.sorbonne.atom_d.adapters.double_column
 
 import android.annotation.SuppressLint
+import android.util.Log
 import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.RadioButton
@@ -56,7 +57,7 @@ class AdapterDoubleColumn(
                 when(doubleColumnType) {
                     DoubleColumnViewHolder.DoubleColumnType.CheckBoxTextView -> {
                         current as List<*>
-                        holder.bind(current[0], current[1], doubleColumnType, checkedBoxes.contains(current[0].toString()))
+                        holder.bind(current,  doubleColumnType, checkedBoxes.contains(current[0].toString()))
                         val item: CheckBox = holder.itemView.findViewById(R.id.Data_checkBox)
                         item.setOnClickListener{ mCheckBox ->
                             mCheckBox as CheckBox
@@ -71,7 +72,7 @@ class AdapterDoubleColumn(
                     }
                     DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView -> {
                         current as List<*>
-                        holder.bind(current[0], current[1], doubleColumnType, position == lastCheckedPosition[adapterType.name])
+                        holder.bind(current, doubleColumnType, position == lastCheckedPosition[adapterType.name])
                         val item: RadioButton = holder.itemView.findViewById(R.id.Data_Radio)
                         item.setOnClickListener{
                             lastCheckedPosition[adapterType.name]?.let { mLastCheckedPosition ->
@@ -114,6 +115,16 @@ class AdapterDoubleColumn(
             }
         }
 
+    }
+
+    fun updateBandwidthItem(endPointId: String, data: Int){
+        for(index in 0 until itemCount){
+            val item = getItem(index) as MutableList<String>
+            if(item[0] == endPointId){
+                item[2] = data.toString()
+                notifyItemChanged(index, item)
+            }
+        }
     }
 
     fun getLastCheckedPosition(): Int {

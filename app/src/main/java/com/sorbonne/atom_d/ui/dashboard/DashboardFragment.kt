@@ -9,9 +9,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import android.widget.AdapterView.OnItemSelectedListener
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
+import com.google.android.gms.nearby.connection.BandwidthInfo
 import com.google.android.gms.nearby.connection.ConnectionType
 import com.google.android.gms.nearby.connection.Strategy
 import com.google.android.material.button.MaterialButtonToggleGroup
@@ -61,6 +63,7 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
     private lateinit var initD2D: Button
     private lateinit var startExperiment: Button
     private lateinit var stopExperiment: Button
+    private lateinit var bandwidthStatus: ImageView
 
     private lateinit var guiLatitude: TextView
     private lateinit var guiLongitude: TextView
@@ -83,10 +86,11 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
     private val adapterConnectedDevices = AdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.CheckBoxTextView, AdapterType.DynamicList)
     private val adapterDiscoveredDevices = AdapterDoubleColumn(DoubleColumnViewHolder.DoubleColumnType.RadioButtonTextView, AdapterType.DynamicList)
     private val connectedDevices = mutableMapOf<String, String>()
+    private val bandwidthInfo = mutableMapOf<String, Int>()
+    private val deviceBandwidthQuality = mutableMapOf<String, Int>()
     private val discoveredDevices = mutableMapOf<String,String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.e(TAG, "onCreate")
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this, DashboardViewModel.Factory(context, DatabaseRepository(requireActivity().application)))[DashboardViewModel::class.java]
         viewModel.instance = (context as? MainActivity).guard { return }.d2d
@@ -119,6 +123,7 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
         guiLongitude = view.findViewById(R.id.dashboard_longitude)
         taskProgressBar = view.findViewById(R.id.dashboard_payload_task_progressBar)
         experimentProgressBar = view.findViewById(R.id.dashboard_payload_experiment_progressBar)
+        bandwidthStatus = view.findViewById(R.id.bandwidth_quality)
 
         startExperiment.isEnabled = false
         stopExperiment.isEnabled = false
@@ -128,6 +133,7 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
             android.R.layout.simple_spinner_item,
             arrayOf("Strategies","P2P_POINT_TO_POINT", "P2P_STAR", "P2P_CLUSTER")
         )
+
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         d2dStrategies.adapter = spinnerAdapter
         d2dStrategies.onItemSelectedListener = this
@@ -349,7 +355,6 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        Log.e(TAG,"onDestroyView")
         viewInstanceState = Bundle()
         viewInstanceState!!.putBoolean("isExperimentRunning", isExperimentRunning)
     }
@@ -374,18 +379,27 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
         }
     }
 
+    override fun onBandwidthQuality(endPointInfo: JSONObject) {
+        super.onBandwidthQuality(endPointInfo)
+        bandwidthInfo[endPointInfo.getString("endPointId")] = endPointInfo.getInt("bandwidthInfo")
+        adapterConnectedDevices.updateBandwidthItem(endPointInfo.getString("endPointId"), endPointInfo.getInt("bandwidthInfo"))
+    }
+
     override fun onDeviceConnected(isActive: Boolean, endPointInfo: JSONObject) {
         super.onDeviceConnected(isActive, endPointInfo)
         if(isActive){
             connectedDevices[endPointInfo.getString("endPointId")] = endPointInfo.getString("endPointName")
+            deviceBandwidthQuality[endPointInfo.getString("endPointId")] = endPointInfo.getInt("bandwidthQuality")
             targetEndDeviceId = endPointInfo.getString("endPointId")
         }else {
             connectedDevices.remove(endPointInfo.getString("endPointId"))
+            bandwidthInfo.remove(endPointInfo.getString("endPointId"))
+            deviceBandwidthQuality.remove(endPointInfo.getString("endPointId"))
             targetEndDeviceId = null
         }
         val auxList = mutableListOf<List<String>>()
         connectedDevices.entries.forEach {
-            auxList.add(mutableListOf(it.key, it.value))
+            auxList.add(mutableListOf(it.key, it.value, deviceBandwidthQuality[it.key].toString()))
         }
         viewModel.connectedDevices.value = auxList
     }
@@ -527,6 +541,20 @@ class DashboardFragment : Fragment(), D2DListener, OnItemSelectedListener  {
                             readableStrategy
                         )
                     )
+                    when(bandwidthInfo[experimentValueParameters.getString("endPointId")]){
+                        BandwidthInfo.Quality.UNKNOWN -> {
+                            bandwidthStatus.setColorFilter(ContextCompat.getColor(requireContext(), R.color.light_grey))
+                        }
+                        BandwidthInfo.Quality.HIGH -> {
+                            bandwidthStatus.setColorFilter(ContextCompat.getColor(requireContext(), R.color.green))
+                        }
+                        BandwidthInfo.Quality.MEDIUM -> {
+                            bandwidthStatus.setColorFilter(ContextCompat.getColor(requireContext(), R.color.yellow))
+                        }
+                        BandwidthInfo.Quality.LOW -> {
+                            bandwidthStatus.setColorFilter(ContextCompat.getColor(requireContext(), R.color.red))
+                        }
+                    }
                 }
                 if(value.getString("experimentState") == "finished"){
                     resetToStandbyStatus()

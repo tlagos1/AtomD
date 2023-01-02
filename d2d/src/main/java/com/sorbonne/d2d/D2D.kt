@@ -20,7 +20,7 @@ object D2D {
         DISCOVERY
     }
 
-    class Builder(private val owner: LifecycleOwner, val deviceName: String, val context: Context){
+    class Builder(private val owner: LifecycleOwner, val deviceName: String, val activity: Activity){
         private var listener: D2DListener?= null
 
         fun setListener(listener: D2DListener): Builder{
@@ -30,7 +30,7 @@ object D2D {
 
         fun build(): D2D{
             instance.sdk = D2DSDK()
-            instance.sdk?.launchSDK(owner, listener, context)
+            instance.sdk?.launchSDK(owner, listener, activity)
             instance.sdk?.setDeviceName(deviceName)
             return instance
         }

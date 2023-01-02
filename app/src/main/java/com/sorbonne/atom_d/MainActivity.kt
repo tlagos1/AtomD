@@ -137,6 +137,17 @@ class MainActivity : AppCompatActivity(), D2DListener {
         }
     }
 
+    override fun onBandwidthQuality(endPointInfo: JSONObject) {
+        super.onBandwidthQuality(endPointInfo)
+        navHostFragment.childFragmentManager.fragments.forEach{
+            try {
+                (it as? DashboardFragment)?.onBandwidthQuality(endPointInfo)
+            } catch (e: Exception){
+                e.printStackTrace()
+            }
+        }
+    }
+
     override fun onExperimentProgress(isExperimentBar: Boolean, progression: Int) {
         super.onExperimentProgress(isExperimentBar, progression)
         navHostFragment.childFragmentManager.fragments.forEach{

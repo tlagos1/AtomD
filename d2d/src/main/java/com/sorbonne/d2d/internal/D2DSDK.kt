@@ -5,21 +5,27 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.sorbonne.d2d.D2DListener
-import com.sorbonne.d2d.tools.ConnectedDevices
 import com.google.android.gms.common.api.CommonStatusCodes
 import com.google.android.gms.location.*
 import com.google.android.gms.nearby.Nearby
 import com.google.android.gms.nearby.connection.*
 import com.sorbonne.d2d.D2D
+import com.sorbonne.d2d.D2DListener
+import com.sorbonne.d2d.tools.ConnectedDevices
 import com.sorbonne.d2d.tools.MessageBytes
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.io.File
+import java.io.*
+import java.lang.ref.WeakReference
 import java.nio.charset.StandardCharsets
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -33,6 +39,8 @@ class D2DSDK {
     private var serviceId: String?=null
     private var deviceName = "UnNamed"
 
+    private var activityRef: WeakReference<Activity>? = null
+
     private val connectedDevices = ConnectedDevices()
 
     private var isDiscoveringAdvertising = false
@@ -45,6 +53,7 @@ class D2DSDK {
     private var totalNumberOfTask: Int = 0
     private var experimentId: Long = 0
     private var experimentName = ""
+    private var endDevicesBandwidthInfo = mutableMapOf<String, Int>()
     //file_experiment
     private var isUploader = false
     private var totalNumberOfTargetDevices: Int = 0
@@ -105,10 +114,8 @@ class D2DSDK {
                                 viewModel.infoPacket.value = infoPacket
                             }
                             if(messageBytes.type == MessageBytes.INFO_FILE){
-
                                 isUploader = false
                                 val fileInfo = JSONObject(translatedPayload)
-                                Log.i(TAG, translatedPayload)
                                 experimentId = fileInfo.getLong("experimentId")
                                 experimentName = fileInfo.getString("experimentName")
                                 isFileExperiment = fileInfo.getBoolean("isFileExperiment")
@@ -120,6 +127,12 @@ class D2DSDK {
                         }
                         Payload.Type.FILE -> {
                             Log.i(TAG, "File received")
+                            CoroutineScope(Dispatchers.IO + CoroutineName("fileScope")).launch {
+                                receivedPayload.asFile()?.asUri()?.let {
+                                    val receivedFile = storeFile(it, "tmp_${payloadTransferUpdate.payloadId}")
+                                    receivedFile?.delete()
+                                }
+                            }
                         }
                         Payload.Type.STREAM -> {}
                     }
@@ -147,6 +160,7 @@ class D2DSDK {
                                 JSONObject()
                                     .put("experimentId", experimentId)
                                     .put("experimentName", experimentName)
+                                    .put("endPointId", endPointId)
                                     .put("targetId", connectedDevices.getDeviceName(endPointId))
                                     .put("repetition", numberOfFileRepetitions[endPointId])
                                     .put("bytesTransferred", payloadTransferUpdate.bytesTransferred)
@@ -161,7 +175,9 @@ class D2DSDK {
                                 numberOfFileRepetitions[endPointId]?.let {
                                     numberOfFileRepetitions[endPointId] = it + 1
                                 }
-                                if(numberOfFileRepetitions.size == totalNumberOfTargetDevices){
+//                                Log.e(TAG, "numberOfFileRepetitions.size: ${numberOfFileRepetitions.size} - totalNumberOfTargetDevices: ${totalNumberOfTargetDevices}")
+//                                if(numberOfFileRepetitions.size == totalNumberOfTargetDevices){
+//                                    Log.e(TAG, "isFileExperiment B")
                                     var fileTaskCompleted = 0
                                     numberOfFileRepetitions.values.forEachIndexed { index, counter ->
                                         if(index == 0){
@@ -173,6 +189,7 @@ class D2DSDK {
                                         }
                                     }
                                     val experimentProgression = ((fileTaskCompleted.toDouble()/totalNumberOfTask)* 100).toInt()
+
                                     if(experimentProgression == 100){
                                         numberOfFileRepetitions.clear()
                                         listOfFilesIds.clear()
@@ -184,8 +201,8 @@ class D2DSDK {
                                         isFileExperiment = false
                                     }
                                     viewModel.experimentProgress.value = experimentProgression
-                                }
-                                return
+//                                }
+//                                return
                             }
                             listOfFilesIds.remove(payloadTransferUpdate.payloadId)
                         }
@@ -267,6 +284,16 @@ class D2DSDK {
     private val connectionLifecycleCallback = object :ConnectionLifecycleCallback(){
         private var endDeviceName = mutableMapOf<String, String>()
 
+        override fun onBandwidthChanged(endPointId: String, bandwidthInfo: BandwidthInfo) {
+            super.onBandwidthChanged(endPointId, bandwidthInfo)
+            endDevicesBandwidthInfo[endPointId] = bandwidthInfo.quality
+            viewModel.bandwidthInfo.value = JSONObject()
+                .put("endPointId", endPointId)
+                .put("bandwidthInfo", bandwidthInfo.quality)
+
+            Log.e(TAG, "bandwidth: ${bandwidthInfo.quality}")
+        }
+
         override fun onConnectionInitiated(endPointId: String, connectionInfo: ConnectionInfo) {
             isAdvertiser = connectionInfo.isIncomingConnection
             endDeviceName[endPointId] = connectionInfo.endpointName
@@ -326,10 +353,13 @@ class D2DSDK {
                         discoveryRepetitions -= 1
                         viewModel.experimentProgress.value = (((totalNumberOfTask-discoveryRepetitions).toDouble()/totalNumberOfTask)*100).toInt()
                         if(discoveryRepetitions == 0){
-                            endDeviceName[endPointId]?.let { mDeviceName ->
+                            endDeviceName.remove(endPointId)?.let{ mDeviceName ->
                                 targetDevice = null
                                 viewModel.connectedDevices.value =
-                                    JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$mDeviceName\"}")
+                                    JSONObject()
+                                        .put("endPointId", endPointId)
+                                        .put("endPointName", mDeviceName)
+                                        .put("bandwidthQuality", BandwidthInfo.Quality.UNKNOWN)
                                 viewModel.discoveryTaskValue.value = taskValue(
                                     "finished",
                                     notificationParametersForCompletedExperiment("discovery")
@@ -344,16 +374,20 @@ class D2DSDK {
                         }
                     }
                     if(discoveryRepetitions == 0){
-                        endDeviceName[endPointId]?.let { mDeviceName ->
+                        endDeviceName.remove(endPointId)?.let { mDeviceName ->
                             Log.i(TAG, "connected with  $endPointId - $mDeviceName")
                             viewModel.connectedDevices.value =
-                                JSONObject("{\"endPointId\": \"$endPointId\", \"endPointName\": \"$mDeviceName\"}")
+                                JSONObject()
+                                    .put("endPointId", endPointId)
+                                    .put("endPointName", mDeviceName)
+                                    .put("bandwidthQuality", BandwidthInfo.Quality.UNKNOWN)
                             connectedDevices.addNewDevice(endPointId, mDeviceName)
                         }
                     }
                 }
                 ConnectionsStatusCodes.STATUS_CONNECTION_REJECTED -> {
                     endDeviceName.remove(endPointId)
+                    endDevicesBandwidthInfo.remove(endPointId)
                 }
             }
         }
@@ -371,14 +405,17 @@ class D2DSDK {
             if(connectedDevices.isEmpty()){
                 viewModel.isConnected.value = false
             }
+            endDevicesBandwidthInfo.remove(endPointId)
         }
     }
 
-    fun launchSDK(owner: LifecycleOwner, listener: D2DListener?, context: Context){
+    fun launchSDK(owner: LifecycleOwner, listener: D2DListener?, activity: Activity){
 
-        connectionClient = Nearby.getConnectionsClient(context)
+        connectionClient = Nearby.getConnectionsClient(activity)
 
-        serviceId = context.packageName
+        serviceId = activity.packageName
+
+        activityRef = WeakReference(activity)
 
         viewModel.isDiscoveryActive.observe(owner){ active ->
             listener?.onDiscoveryChange(active)
@@ -391,6 +428,9 @@ class D2DSDK {
         }
         viewModel.lostDevice.observe(owner){ endPointInfo ->
             listener?.onEndPointsDiscovered(false, endPointInfo)
+        }
+        viewModel.bandwidthInfo.observe(owner){ endPointInfo ->
+            listener?.onBandwidthQuality(endPointInfo)
         }
         viewModel.connectedDevices.observe(owner){ endPointInfo ->
             listener?.onDeviceConnected(true, endPointInfo)
@@ -541,8 +581,8 @@ class D2DSDK {
                 }
             }
         }
-
     }
+
     fun notifyToAllConnectedDevices(tag: Byte, messageType: Byte, notificationParameters: JSONObject, afterCompleteTask:(()->Any?)?){
         val messageBytes = MessageBytes()
         messageBytes.buildRegularPacket(
@@ -694,6 +734,7 @@ class D2DSDK {
             if(connectedDevices.isEmpty()){
                 viewModel.isConnected.value = false
             }
+            endDevicesBandwidthInfo.remove(endPointId)
         }
     }
 
@@ -720,6 +761,7 @@ class D2DSDK {
             connectedDevices.getEndPointIds().forEach{ endPointId ->
                 viewModel.disconnectedDevices.value =  JSONObject("{\"endPointId\": \"$endPointId\", \"endPointParameters\": ${connectedDevices.getDeviceParameters(endPointId)}}")
                 Log.i(TAG, "disconnected from  $endPointId")
+                endDevicesBandwidthInfo.remove(endPointId)
             }
             connectedDevices.clear()
 
@@ -730,6 +772,31 @@ class D2DSDK {
 
     fun setDeviceName(deviceName: String){
         this.deviceName = deviceName
+    }
+
+    private fun storeFile(uri:Uri, fileName: String): File?{
+        activityRef?.get()?.let { activity ->
+            try {
+                val inputStream = activity.contentResolver.openInputStream(uri)
+                copyStream(inputStream!!, FileOutputStream(File(activity.cacheDir, fileName)))
+                inputStream.close()
+            } catch (e: IOException){
+                e.printStackTrace()
+            } finally {
+                activity.contentResolver.delete(uri, null, null)
+            }
+            return File(activity.cacheDir, fileName)
+        }
+        return null
+    }
+
+    private fun copyStream(mIn: InputStream, mOut: OutputStream){
+        try {
+            mIn.copyTo(mOut)
+        } finally {
+            mIn.close()
+            mOut.close()
+        }
     }
 
     private val locationCallback: LocationCallback = object: LocationCallback(){
